@@ -1,0 +1,12 @@
+import { createRouter, createWebHistory } from "vue-router";
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    { path: "/", name: "gacha", component: () => import("../views/GachaView.vue") },
+    { path: "/admin", name: "admin", component: () => import("../views/AdminView.vue") },
+    { path: "/history", name: "history", component: () => import("../views/HistoryView.vue") },
+  ],
+});
+
+export default router;
