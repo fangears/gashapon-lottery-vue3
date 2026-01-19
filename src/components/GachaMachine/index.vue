@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import type { Prize } from "../../types/gacha";
 import PhysicsCanvas from "./PhysicsCanvas.vue";
 import GachaBall from "./GachaBall.vue";
+import InnerBall from "./InnerBall.vue";
 import ExitGate from "./ExitGate.vue";
 import KnobButton from "./KnobButton.vue";
 import OverlayMask from "./OverlayMask.vue";
@@ -17,6 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "start"): void;
+  (event: "confirm"): void;
 }>();
 
 const canvasRef = ref<InstanceType<typeof PhysicsCanvas> | null>(null);
@@ -43,11 +45,15 @@ watch(
         <PhysicsCanvas ref="canvasRef" />
       </div>
       <div class="controls">
-        <ExitGate ref="exitGateRef" :active="isAnimating" />
+        <ExitGate ref="exitGateRef" :active="isAnimating">
+          <!-- 内部球：在出奖口内部掉落，被 overflow:hidden 裁剪 -->
+          <InnerBall :status="status" :prize="prize" />
+        </ExitGate>
         <KnobButton :disabled="disabled || isAnimating" :active="status === 'shaking'" @click="emit('start')" />
       </div>
     </div>
-    <GachaBall :status="status" :prize="prize" :gate-el="gateElement" />
+    <!-- 外部球：展示阶段，通过 Teleport 渲染到 body -->
+    <GachaBall :status="status" :prize="prize" :gate-el="gateElement" @confirm="emit('confirm')" />
     <OverlayMask :active="status === 'revealing' || status === 'open'" />
   </div>
 </template>

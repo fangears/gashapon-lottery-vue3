@@ -9,6 +9,8 @@ defineExpose({ rootRef });
 <template>
   <div ref="rootRef" class="exit-gate" :class="{ active }">
     <div class="gate-door"></div>
+    <!-- 插槽用于放置内部掉落的扭蛋 -->
+    <slot></slot>
   </div>
 </template>
 

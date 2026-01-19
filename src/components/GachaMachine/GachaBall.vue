@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch, nextTick } from "vue";
 import type { Prize } from "../../types/gacha";
 
 // Define inheritAttrs in a separate normal script block
@@ -13,6 +13,14 @@ const props = defineProps<{
   gateEl?: HTMLElement | null;
 }>();
 
+const emit = defineEmits<{
+  (event: "confirm"): void;
+}>();
+
+const handleConfirm = () => {
+  emit("confirm");
+};
+
 const ballColor = computed(() => {
   const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7D794'];
   const seed = props.prize?.id || props.prize?.name || Math.random().toString();
@@ -23,75 +31,83 @@ const ballColor = computed(() => {
   return colors[hash % colors.length];
 });
 
-const isVisible = computed(() => ["dropping", "revealing", "open"].includes(props.status));
+// 外部球：只在 revealing 和 open 阶段显示
+const isVisible = computed(() => ["revealing", "open"].includes(props.status));
 
-const centeredStyle = {
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%) scale(3)',
-  transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)'
-};
+// 初始位置（从出奖口位置开始）
+const initialPosition = ref<{ top: string; left: string } | null>(null);
 
-// Transition hooks
-const onEnter = (el: Element, done: () => void) => {
-  const element = el as HTMLElement;
-  const gate = props.gateEl;
-  
-  if (!gate) {
-    done();
-    return;
+// 是否已经移动到中心
+const isCentered = ref(false);
+
+// 监听状态变化
+watch(() => props.status, async (newStatus) => {
+  if (newStatus === "revealing") {
+    // 计算出奖口位置作为起始点
+    const gate = props.gateEl;
+    if (gate) {
+      const rect = gate.getBoundingClientRect();
+      initialPosition.value = {
+        top: `${rect.top + rect.height / 2 - 23}px`, // 23 是球半径
+        left: `${rect.left + rect.width / 2 - 23}px`
+      };
+    }
+    isCentered.value = false;
+    
+    // 等待 DOM 更新后，触发移动到中心的动画
+    await nextTick();
+    // 短暂延迟确保初始位置已应用
+    requestAnimationFrame(() => {
+      isCentered.value = true;
+    });
+  } else if (newStatus === "idle") {
+    isCentered.value = false;
+    initialPosition.value = null;
   }
+});
 
-  // Phase 1: Drop into gate
-  const rect = gate.getBoundingClientRect();
-  const startTop = rect.top - 60;
-  const endTop = rect.top + 12; // 12px padding inside gate
-  const left = rect.left + 12;
-
-  // Initial position (above gate)
-  element.style.position = 'fixed';
-  element.style.left = `${left}px`;
-  element.style.top = `${startTop}px`;
-  element.style.transform = 'translate(0, 0) scale(1)';
-  element.style.transition = 'top 0.6s cubic-bezier(0.5, 0, 0.75, 0)';
-  element.style.zIndex = '100';
-
-  // Force reflow
-  void element.offsetWidth;
-
-  // Animate drop
-  element.style.top = `${endTop}px`;
-
-  // Wait for drop to finish (600ms match CSS)
-  setTimeout(() => {
-    done();
-  }, 600);
-};
-
-// We don't need a complex watch if we use the :style binding in template for the 'revealing' phase
+// 计算样式
+const ballStyle = computed(() => {
+  const baseStyle = { '--ball-color': ballColor.value };
+  
+  if (isCentered.value) {
+    // 移动到中心并放大
+    return {
+      ...baseStyle,
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%) scale(3)',
+      transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)'
+    };
+  } else if (initialPosition.value) {
+    // 初始位置（出奖口位置）
+    return {
+      ...baseStyle,
+      ...initialPosition.value,
+      transform: 'translate(0, 0) scale(1)',
+      transition: 'none'
+    };
+  }
+  
+  return baseStyle;
+});
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition
-      name="ball-drop"
-      :css="false"
-      @enter="onEnter"
-    >
+    <Transition name="ball-reveal">
       <div
         v-if="isVisible"
         class="gacha-ball"
         :class="{ 'open': status === 'open' }"
-        :style="[
-          { '--ball-color': ballColor },
-          (status === 'revealing' || status === 'open') ? centeredStyle : {}
-        ]"
+        :style="ballStyle"
       >
         <div class="ball-half top"></div>
         <div class="ball-half bottom"></div>
         <div class="prize-paper">
           <div class="prize-title">Congratulations</div>
           <div class="prize-name">{{ prize?.name || 'Mystery Prize' }}</div>
+          <button class="confirm-btn" @click="handleConfirm">确认</button>
         </div>
       </div>
     </Transition>
@@ -106,9 +122,27 @@ const onEnter = (el: Element, done: () => void) => {
   border-radius: 50%;
   transform-style: preserve-3d;
   z-index: 100;
-  /* Initial state is handled by JS hooks in onEnter, 
-     but when 'revealing' style kicks in, we want smooth transition. 
-     The 'centeredStyle' object has a transition property. */
+}
+
+/* 外部球出现动画 */
+.ball-reveal-enter-from {
+  opacity: 0;
+}
+
+.ball-reveal-enter-active {
+  transition: opacity 0.1s;
+}
+
+.ball-reveal-enter-to {
+  opacity: 1;
+}
+
+.ball-reveal-leave-active {
+  transition: opacity 0.3s;
+}
+
+.ball-reveal-leave-to {
+  opacity: 0;
 }
 
 .gacha-ball.open .ball-half.top {
@@ -123,7 +157,7 @@ const onEnter = (el: Element, done: () => void) => {
 
 .gacha-ball.open .prize-paper {
   width: 140px;
-  height: 80px;
+  height: 110px;
   font-size: 14px;
   padding: 10px;
   z-index: 10;
@@ -190,5 +224,28 @@ const onEnter = (el: Element, done: () => void) => {
   font-size: 16px;
   line-height: 1.2;
   white-space: pre-line;
+}
+
+.confirm-btn {
+  margin-top: 10px;
+  padding: 6px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #ff8e8e 0%, #d65c5c 100%);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(214, 92, 92, 0.3);
+  transition: all 0.2s ease;
+}
+
+.confirm-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(214, 92, 92, 0.4);
+}
+
+.confirm-btn:active {
+  transform: scale(0.98);
 }
 </style>
