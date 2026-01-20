@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import gsap from "gsap";
 import type { Prize } from "../../types/gacha";
 
 const props = defineProps<{
   status: "idle" | "shaking" | "dropping" | "revealing" | "open";
   prize?: Prize | null;
 }>();
+
+const ballRef = ref<HTMLElement | null>(null);
 
 const ballColor = computed(() => {
   const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7D794'];
@@ -20,37 +23,50 @@ const ballColor = computed(() => {
 // 只在 dropping 阶段显示
 const isVisible = computed(() => props.status === "dropping");
 
-// 掉落动画：匀速掉落 + 小回弹
+// 使用 GSAP 实现掉落动画：匀速掉落 + 小回弹
 const onEnter = (el: Element, done: () => void) => {
   const element = el as HTMLElement;
   
+  // 创建 GSAP Timeline
+  const tl = gsap.timeline({
+    onComplete: done
+  });
+
+  // 设置初始位置（只设置 y，x 由 CSS left 控制居中）
+  gsap.set(element, {
+    y: -70 // 从出奖口顶部上方开始
+  });
+
   // 阶段1：匀速掉落 (300ms)
-  element.style.transform = 'translateX(-50%) translateY(-120%)';
-  element.style.transition = 'transform 0.3s linear';
-  
-  // 强制重排
-  void element.offsetWidth;
-  
-  // 开始掉落到底部
-  element.style.transform = 'translateX(-50%) translateY(0)';
-  
-  // 阶段2：回弹动画 (掉落完成后开始)
-  setTimeout(() => {
-    // 回弹向上 (120ms)
-    element.style.transition = 'transform 0.12s ease-out';
-    element.style.transform = 'translateX(-50%) translateY(-12px)';
-    
-    // 回弹落下 (120ms)
-    setTimeout(() => {
-      element.style.transition = 'transform 0.12s ease-in';
-      element.style.transform = 'translateX(-50%) translateY(0)';
-      
-      // 动画完全结束
-      setTimeout(() => {
-        done();
-      }, 120);
-    }, 120);
-  }, 300);
+  tl.to(element, {
+    y: 0,
+    duration: 0.3,
+    ease: "none" // 匀速
+  });
+
+  // 阶段2：回弹向上 (120ms)
+  tl.to(element, {
+    y: -12,
+    duration: 0.12,
+    ease: "power2.out"
+  });
+
+  // 阶段3：回弹落下 (120ms)
+  tl.to(element, {
+    y: 0,
+    duration: 0.12,
+    ease: "power2.in"
+  });
+};
+
+// 离开动画（淡出）
+const onLeave = (el: Element, done: () => void) => {
+  gsap.to(el, {
+    opacity: 0,
+    duration: 0.15,
+    ease: "power1.out",
+    onComplete: done
+  });
 };
 </script>
 
@@ -58,9 +74,11 @@ const onEnter = (el: Element, done: () => void) => {
   <Transition
     :css="false"
     @enter="onEnter"
+    @leave="onLeave"
   >
     <div
       v-if="isVisible"
+      ref="ballRef"
       class="inner-ball"
       :style="{ '--ball-color': ballColor }"
     >
@@ -76,10 +94,9 @@ const onEnter = (el: Element, done: () => void) => {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  /* 居中在出奖口底部 */
+  /* 居中在出奖口底部 - 使用 calc 而非 transform 来避免与 GSAP 冲突 */
   bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-120%);
+  left: calc(50% - 23px); /* 50% - 半径(46px/2) */
   z-index: 10;
 }
 

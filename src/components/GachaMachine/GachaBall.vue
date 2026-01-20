@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from "vue";
+import { computed, ref, watch, onUnmounted } from "vue";
+import gsap from "gsap";
 import type { Prize } from "../../types/gacha";
 
-// Define inheritAttrs in a separate normal script block
 defineOptions({
   inheritAttrs: false
 });
@@ -16,6 +16,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "confirm"): void;
 }>();
+
+const ballRef = ref<HTMLElement | null>(null);
+const topHalfRef = ref<HTMLElement | null>(null);
+const bottomHalfRef = ref<HTMLElement | null>(null);
+const prizePaperRef = ref<HTMLElement | null>(null);
+
+// 存储当前动画 timeline，便于清理
+let currentTimeline: gsap.core.Timeline | null = null;
 
 const handleConfirm = () => {
   emit("confirm");
@@ -34,77 +42,161 @@ const ballColor = computed(() => {
 // 外部球：只在 revealing 和 open 阶段显示
 const isVisible = computed(() => ["revealing", "open"].includes(props.status));
 
-// 初始位置（从出奖口位置开始）
-const initialPosition = ref<{ top: string; left: string } | null>(null);
+// 清理动画
+const killAnimations = () => {
+  if (currentTimeline) {
+    currentTimeline.kill();
+    currentTimeline = null;
+  }
+};
 
-// 是否已经移动到中心
-const isCentered = ref(false);
+// 执行 revealing 动画：从出奖口移动到屏幕中心并放大
+const playRevealingAnimation = () => {
+  if (!ballRef.value || !props.gateEl) return;
+
+  const gate = props.gateEl;
+  const rect = gate.getBoundingClientRect();
+  
+  // 设置初始位置（出奖口位置）
+  gsap.set(ballRef.value, {
+    position: "fixed",
+    top: rect.top + rect.height / 2 - 23,
+    left: rect.left + rect.width / 2 - 23,
+    scale: 1,
+    opacity: 1
+  });
+
+  // 创建 revealing 动画 timeline
+  currentTimeline = gsap.timeline();
+
+  // 移动到屏幕中心并放大
+  currentTimeline.to(ballRef.value, {
+    top: "50%",
+    left: "50%",
+    xPercent: -50,
+    yPercent: -50,
+    scale: 3,
+    duration: 0.8,
+    ease: "power2.out"
+  });
+};
+
+// 执行 open 动画：扭蛋打开，纸条展开
+const playOpenAnimation = () => {
+  if (!topHalfRef.value || !bottomHalfRef.value || !prizePaperRef.value) return;
+
+  currentTimeline = gsap.timeline();
+
+  // 上半球向上移动并旋转
+  currentTimeline.to(topHalfRef.value, {
+    y: -40,
+    rotation: -15,
+    opacity: 0.8,
+    duration: 0.6,
+    ease: "back.out(1.7)"
+  }, 0);
+
+  // 下半球向下移动并旋转
+  currentTimeline.to(bottomHalfRef.value, {
+    y: 40,
+    rotation: 15,
+    opacity: 0.8,
+    duration: 0.6,
+    ease: "back.out(1.7)"
+  }, 0);
+
+  // 纸条展开（稍微延迟）
+  currentTimeline.to(prizePaperRef.value, {
+    width: 140,
+    height: 110,
+    padding: 10,
+    duration: 0.5,
+    ease: "back.out(1.4)"
+  }, 0.2);
+};
+
+// 执行离开动画
+const playLeaveAnimation = (done: () => void) => {
+  if (!ballRef.value) {
+    done();
+    return;
+  }
+
+  killAnimations();
+
+  gsap.to(ballRef.value, {
+    opacity: 0,
+    scale: 2.5,
+    duration: 0.3,
+    ease: "power2.in",
+    onComplete: done
+  });
+};
+
+// 重置所有元素状态
+const resetElements = () => {
+  if (topHalfRef.value) {
+    gsap.set(topHalfRef.value, { y: 0, rotation: 0, opacity: 1 });
+  }
+  if (bottomHalfRef.value) {
+    gsap.set(bottomHalfRef.value, { y: 0, rotation: 0, opacity: 1 });
+  }
+  if (prizePaperRef.value) {
+    gsap.set(prizePaperRef.value, { width: 0, height: 0, padding: 0 });
+  }
+};
 
 // 监听状态变化
-watch(() => props.status, async (newStatus) => {
-  if (newStatus === "revealing") {
-    // 计算出奖口位置作为起始点
-    const gate = props.gateEl;
-    if (gate) {
-      const rect = gate.getBoundingClientRect();
-      initialPosition.value = {
-        top: `${rect.top + rect.height / 2 - 23}px`, // 23 是球半径
-        left: `${rect.left + rect.width / 2 - 23}px`
-      };
-    }
-    isCentered.value = false;
-    
-    // 等待 DOM 更新后，触发移动到中心的动画
-    await nextTick();
-    // 短暂延迟确保初始位置已应用
+watch(() => props.status, (newStatus, oldStatus) => {
+  // 从非 visible 状态进入 revealing
+  if (newStatus === "revealing" && !["revealing", "open"].includes(oldStatus || "")) {
+    // 等待 DOM 渲染后执行动画
     requestAnimationFrame(() => {
-      isCentered.value = true;
+      resetElements();
+      playRevealingAnimation();
     });
-  } else if (newStatus === "idle") {
-    isCentered.value = false;
-    initialPosition.value = null;
+  }
+  // 进入 open 状态
+  else if (newStatus === "open" && oldStatus === "revealing") {
+    playOpenAnimation();
+  }
+  // 重置到 idle
+  else if (newStatus === "idle") {
+    killAnimations();
   }
 });
 
-// 计算样式
-const ballStyle = computed(() => {
-  const baseStyle = { '--ball-color': ballColor.value };
-  
-  if (isCentered.value) {
-    // 移动到中心并放大
-    return {
-      ...baseStyle,
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%) scale(3)',
-      transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)'
-    };
-  } else if (initialPosition.value) {
-    // 初始位置（出奖口位置）
-    return {
-      ...baseStyle,
-      ...initialPosition.value,
-      transform: 'translate(0, 0) scale(1)',
-      transition: 'none'
-    };
-  }
-  
-  return baseStyle;
+// Vue Transition hooks
+const onEnter = (el: Element, done: () => void) => {
+  gsap.set(el, { opacity: 1 });
+  done();
+};
+
+const onLeave = (el: Element, done: () => void) => {
+  playLeaveAnimation(done);
+};
+
+onUnmounted(() => {
+  killAnimations();
 });
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition name="ball-reveal">
+    <Transition
+      :css="false"
+      @enter="onEnter"
+      @leave="onLeave"
+    >
       <div
         v-if="isVisible"
+        ref="ballRef"
         class="gacha-ball"
-        :class="{ 'open': status === 'open' }"
-        :style="ballStyle"
+        :style="{ '--ball-color': ballColor }"
       >
-        <div class="ball-half top"></div>
-        <div class="ball-half bottom"></div>
-        <div class="prize-paper">
+        <div ref="topHalfRef" class="ball-half top"></div>
+        <div ref="bottomHalfRef" class="ball-half bottom"></div>
+        <div ref="prizePaperRef" class="prize-paper">
           <div class="prize-title">Congratulations</div>
           <div class="prize-name">{{ prize?.name || 'Mystery Prize' }}</div>
           <button class="confirm-btn" @click="handleConfirm">确认</button>
@@ -124,45 +216,6 @@ const ballStyle = computed(() => {
   z-index: 100;
 }
 
-/* 外部球出现动画 */
-.ball-reveal-enter-from {
-  opacity: 0;
-}
-
-.ball-reveal-enter-active {
-  transition: opacity 0.1s;
-}
-
-.ball-reveal-enter-to {
-  opacity: 1;
-}
-
-.ball-reveal-leave-active {
-  transition: opacity 0.3s;
-}
-
-.ball-reveal-leave-to {
-  opacity: 0;
-}
-
-.gacha-ball.open .ball-half.top {
-  transform: translateY(-40px) rotate(-15deg);
-  opacity: 0.8;
-}
-
-.gacha-ball.open .ball-half.bottom {
-  transform: translateY(40px) rotate(15deg);
-  opacity: 0.8;
-}
-
-.gacha-ball.open .prize-paper {
-  width: 140px;
-  height: 110px;
-  font-size: 14px;
-  padding: 10px;
-  z-index: 10;
-}
-
 .ball-half {
   position: absolute;
   width: 100%;
@@ -171,8 +224,8 @@ const ballStyle = computed(() => {
   box-sizing: border-box;
   border: 2px solid rgba(0,0,0,0.1);
   background: var(--ball-color, #ff6b6b);
-  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
   z-index: 2;
+  /* 移除 CSS transition，完全由 GSAP 控制 */
 }
 
 .ball-half.top {
@@ -206,12 +259,11 @@ const ballStyle = computed(() => {
   font-weight: 700;
   color: #d65c5c;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  font-size: 0;
   overflow: hidden;
-  transition: all 0.5s 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 1;
   border: 2px solid #e0c090;
   padding: 0;
+  /* 移除 CSS transition，完全由 GSAP 控制 */
 }
 
 .prize-title {
