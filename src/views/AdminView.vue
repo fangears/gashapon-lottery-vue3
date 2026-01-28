@@ -71,7 +71,7 @@ watch(
   gap: var(--space-xl);
   max-width: 1200px;
   margin: 0 auto;
-  padding-block: var(--space-2xl);
+  padding: var(--space-2xl) var(--space-xl);
 }
 
 .admin-section {

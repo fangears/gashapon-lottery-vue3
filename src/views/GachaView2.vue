@@ -6,6 +6,7 @@ import { useGachaStore } from "../stores/gacha";
 import type { Prize } from "../types/gacha";
 import GachaMachine2 from "../components/GachaMachine2/index.vue";
 import FilmStrip from "../components/FilmStrip/FilmStrip.vue";
+import WinnerBubbleList from "../components/WinnerBubbleList.vue";
 import backgroundImage from "../assets/扭蛋机组装素材/背景.jpg";
 
 type MachineStatus = "idle" | "shaking" | "dropping" | "revealing" | "open";
@@ -161,8 +162,11 @@ const cancelEmail = async () => {
 <template>
   <main class="page-container gacha-page" :style="{ backgroundImage: `url(${backgroundImage})` }">
     <section class="gacha-layout">
-      <!-- 左侧空元素 -->
-      <div class="gacha-side"></div>
+      <!-- 左侧中奖气泡列表（有记录时才显示） -->
+      <div class="gacha-side gacha-side--left" v-if="store.history.length">
+        <WinnerBubbleList :records="store.history" />
+      </div>
+      <div v-else class="gacha-side"></div>
 
       <!-- 中间扭蛋机 -->
       <div class="gacha-center">
@@ -229,6 +233,12 @@ const cancelEmail = async () => {
   justify-content: flex-start;
   align-items: center;
   padding-left: 60px;
+}
+
+.gacha-side--left {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .gacha-center {
