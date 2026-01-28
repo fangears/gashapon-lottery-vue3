@@ -13,7 +13,7 @@ const navItems = [
 ];
 
 const activePath = computed(() => route.path);
-const isDev = import.meta.env.DEV;
+const isNotHomePage = computed(() => route.path !== "/");
 
 const handleContextMenu = (event: MouseEvent) => {
   if (!event.ctrlKey) return;
@@ -31,7 +31,7 @@ const handleContextMenu = (event: MouseEvent) => {
 
 <template>
   <div class="app-shell" @contextmenu="handleContextMenu">
-    <header v-if="isDev" class="app-header">
+    <header v-if="isNotHomePage" class="app-header">
       <div class="brand">
         <span class="brand-title">扭蛋机抽奖</span>
         <span class="brand-subtitle">Playful Gacha Lottery</span>
@@ -54,6 +54,8 @@ const handleContextMenu = (event: MouseEvent) => {
 
 <style scoped>
 .app-header {
+  position: sticky;
+  top: 0;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
@@ -62,6 +64,7 @@ const handleContextMenu = (event: MouseEvent) => {
   padding: var(--space-lg) var(--space-2xl);
   background: white;
   box-shadow: var(--shadow-sm);
+  z-index: 100;
 }
 
 .brand {

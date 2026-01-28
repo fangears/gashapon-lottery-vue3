@@ -56,7 +56,7 @@ const playRevealingAnimation = () => {
 
   const gate = props.gateEl;
   const rect = gate.getBoundingClientRect();
-  
+
   // 设置初始位置（出奖口位置）
   gsap.set(ballRef.value, {
     position: "fixed",
@@ -172,7 +172,7 @@ const onEnter = (el: Element, done: () => void) => {
   done();
 };
 
-const onLeave = (el: Element, done: () => void) => {
+const onLeave = (_el: Element, done: () => void) => {
   playLeaveAnimation(done);
 };
 
@@ -183,17 +183,8 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <Transition
-      :css="false"
-      @enter="onEnter"
-      @leave="onLeave"
-    >
-      <div
-        v-if="isVisible"
-        ref="ballRef"
-        class="gacha-ball"
-        :style="{ '--ball-color': ballColor }"
-      >
+    <Transition :css="false" @enter="onEnter" @leave="onLeave">
+      <div v-if="isVisible" ref="ballRef" class="gacha-ball" :style="{ '--ball-color': ballColor }">
         <div ref="topHalfRef" class="ball-half top"></div>
         <div ref="bottomHalfRef" class="ball-half bottom"></div>
         <div ref="prizePaperRef" class="prize-paper">
@@ -222,7 +213,7 @@ onUnmounted(() => {
   height: 50%;
   left: 0;
   box-sizing: border-box;
-  border: 2px solid rgba(0,0,0,0.1);
+  border: 2px solid rgba(0, 0, 0, 0.1);
   background: var(--ball-color, #ff6b6b);
   z-index: 2;
   /* 移除 CSS transition，完全由 GSAP 控制 */

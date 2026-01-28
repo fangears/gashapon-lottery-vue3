@@ -8,16 +8,23 @@ import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 import App from "./App.vue";
 import router from "./router";
+import { useGachaStore } from "./stores/gacha";
 import "./styles/global.css";
 
-const app = createApp(App);
-const pinia = createPinia();
+async function bootstrap() {
+  const app = createApp(App);
+  const pinia = createPinia();
+  pinia.use(piniaPluginPersistedstate);
 
-pinia.use(piniaPluginPersistedstate);
+  app.use(pinia);
+  app.use(router);
+  app.use(ElementPlus);
+  app.use(ContextMenu);
 
-app.use(pinia);
-app.use(router);
-app.use(ElementPlus);
-app.use(ContextMenu);
+  // 胶片图片走 IndexedDB：启动时先 hydrate，避免刷新后丢失
+  await useGachaStore(pinia).hydrateFilmImages();
 
-app.mount("#app");
+  app.mount("#app");
+}
+
+bootstrap();

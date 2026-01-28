@@ -5,6 +5,7 @@ import { useGachaMachine } from "../composables/useGachaMachine";
 import { useGachaStore } from "../stores/gacha";
 import type { Prize } from "../types/gacha";
 import GachaMachine from "../components/GachaMachine/index.vue";
+import backgroundImage from "../assets/扭蛋机组装素材/背景.jpg";
 
 type MachineStatus = "idle" | "shaking" | "dropping" | "revealing" | "open";
 
@@ -154,10 +155,18 @@ const cancelEmail = async () => {
 </script>
 
 <template>
-  <main class="page-container gacha-page">
+  <main class="page-container gacha-page" :style="{ backgroundImage: `url(${backgroundImage})` }">
     <section class="gacha-layout">
-      <!-- Refactored usage of GachaMachine -->
-      <GachaMachine :status="status" :prize="activePrize" :disabled="!canStart" @start="handleStart" @confirm="handlePrizeConfirm" />
+      <!-- 左侧空元素 -->
+      <div class="gacha-side"></div>
+      
+      <!-- 中间扭蛋机 -->
+      <div class="gacha-center">
+        <GachaMachine :status="status" :prize="activePrize" :disabled="!canStart" @start="handleStart" @confirm="handlePrizeConfirm" />
+      </div>
+      
+      <!-- 右侧空元素 -->
+      <div class="gacha-side"></div>
     </section>
 
     <el-dialog v-model="showSocialDialog" title="Enter Social Media Account" width="360px">
@@ -184,12 +193,30 @@ const cancelEmail = async () => {
   gap: var(--space-2xl);
   /* Ensure full height for better centering like reference */
   place-items: center;
-  background-color: #fce4ec; /* Background from reference */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .gacha-layout {
   display: flex;
-  justify-content: center;
+  flex-wrap: nowrap;
   width: 100%;
+  height: 100%;
+}
+
+.gacha-side {
+  flex: 1 1 33.333%;
+  width: 33.333%;
+  height: 100%;
+}
+
+.gacha-center {
+  flex: 1 1 33.333%;
+  width: 33.333%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

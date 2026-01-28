@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import Matter from "matter-js";
 
 const containerRef = ref<HTMLDivElement | null>(null);
