@@ -2,10 +2,12 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import gsap from "gsap";
 import { useGachaStore } from "../../stores/gacha";
+import { useImageLibraryStore } from "../../stores/imageLibrary";
 import filmFrameImage from "../../assets/扭蛋机组装素材/右边照片录播-优化.png";
 
 const store = useGachaStore();
-const filmSourceImages = computed(() => store.filmImages.filter(Boolean));
+const imageStore = useImageLibraryStore();
+const filmSourceImages = computed(() => (store.config.filmImageIds ?? []).map((id) => imageStore.getUrl(id)).filter(Boolean));
 
 const viewportRef = ref<HTMLDivElement | null>(null);
 const trackRef = ref<HTMLDivElement | null>(null);
@@ -144,7 +146,7 @@ onUnmounted(() => {
 
     <div v-else class="film-empty">
       <div class="film-empty-title">No Film Images</div>
-      <div class="film-empty-subtitle">Please go to Admin Panel → Film List to upload</div>
+      <div class="film-empty-subtitle">请前往“图片管理”上传素材，并在后台选择用于胶片展示的图片</div>
     </div>
   </div>
 </template>

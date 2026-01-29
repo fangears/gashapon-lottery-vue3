@@ -8,6 +8,7 @@ const router = createRouter({
     { path: "/admin", name: "admin", component: () => import("../views/AdminView.vue") },
     { path: "/history", name: "history", component: () => import("../views/HistoryView.vue") },
     { path: "/screensaver", name: "screensaver", component: () => import("../views/ScreensaverView.vue") },
+    { path: "/images", name: "images", component: () => import("../views/ImageManagerView.vue") },
   ],
 });
 

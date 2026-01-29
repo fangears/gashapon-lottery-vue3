@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import type { GachaConfig, GachaRecord, Prize, Timezone } from "../types/gacha";
-import { loadFilmImages, saveFilmImage, deleteFilmImage, clearFilmImages as clearFilmImagesStorage, readFilmImageIndex } from "../utils/filmImageStorage";
 
 const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -8,6 +7,8 @@ const createDefaultConfig = (): GachaConfig => ({
   requireSocialAccount: false,
   useStockAsWeight: false,
   timezone: "Asia/Shanghai",
+  filmImageIds: [],
+  screensaverImageIds: [],
   prizes: [
     {
       id: createId(),
@@ -48,10 +49,16 @@ const normalizePrize = (prize: Prize): Prize => ({
 
 const normalizeConfig = (config?: GachaConfig): GachaConfig => {
   const base = config ?? createDefaultConfig();
+  // 兼容迁移：
+  // - 旧版只有 filmImageIds（胶片/屏保共用）
+  // - 新版拆分 screensaverImageIds；若缺失则默认沿用 filmImageIds
+  const screensaverImageIdsFallback = (base as Partial<GachaConfig>).screensaverImageIds ?? base.filmImageIds ?? [];
   return {
     requireSocialAccount: Boolean(base.requireSocialAccount),
     useStockAsWeight: Boolean(base.useStockAsWeight),
     timezone: base.timezone ?? "Asia/Shanghai",
+    filmImageIds: (base.filmImageIds ?? []).filter(Boolean),
+    screensaverImageIds: (screensaverImageIdsFallback ?? []).filter(Boolean),
     prizes: (base.prizes ?? []).map(normalizePrize),
   };
 };
@@ -60,8 +67,6 @@ export const useGachaStore = defineStore("gacha", {
   state: () => ({
     config: normalizeConfig(),
     history: [] as GachaRecord[],
-    // 胶片滚动图片（base64 dataURL），由后台“胶片列表”维护
-    filmImages: [] as string[],
   }),
   getters: {
     timezone: (state): Timezone => state.config.timezone,
@@ -92,7 +97,7 @@ export const useGachaStore = defineStore("gacha", {
           weight: 1,
           needEmail: false,
           imageUrl: "",
-        })
+        }),
       );
     },
     updatePrize(index: number, patch: Partial<Prize>) {
@@ -113,44 +118,38 @@ export const useGachaStore = defineStore("gacha", {
       this.history = [];
     },
 
-    async hydrateFilmImages() {
-      // 从文件系统加载所有图片（转换为 base64 dataURL）
-      const images = await loadFilmImages();
-      if (images.length) this.filmImages = images;
+    setFilmImageIds(ids: string[]) {
+      this.config.filmImageIds = (ids ?? []).filter(Boolean);
+    },
+    removeFilmImageId(id: string) {
+      this.config.filmImageIds = this.config.filmImageIds.filter((x) => x !== id);
+    },
+    clearFilmImageIds() {
+      this.config.filmImageIds = [];
     },
 
-    async addFilmImage(base64: string, originalName?: string) {
-      if (!base64) return;
-      // 保存到文件系统，获取文件路径（但为了显示，我们仍然使用 base64）
-      await saveFilmImage(base64, originalName);
-      // 同时保存 base64 到 state（用于立即显示）
-      this.filmImages.push(base64);
+    setScreensaverImageIds(ids: string[]) {
+      this.config.screensaverImageIds = (ids ?? []).filter(Boolean);
     },
-    async removeFilmImage(index: number) {
-      if (index < 0 || index >= this.filmImages.length) return;
-      
-      // 从索引中获取对应的文件名并删除文件
-      try {
-        const fileIndex = await readFilmImageIndex();
-        if (index < fileIndex.length) {
-          const fileName = fileIndex[index];
-          await deleteFilmImage(fileName);
-        }
-      } catch (error) {
-        console.error("删除文件失败:", error);
-      }
-      
-      // 从 state 中移除
-      this.filmImages.splice(index, 1);
+    removeScreensaverImageId(id: string) {
+      this.config.screensaverImageIds = this.config.screensaverImageIds.filter((x) => x !== id);
     },
-    setFilmImages(images: string[]) {
-      this.filmImages = (images ?? []).filter(Boolean);
+    clearScreensaverImageIds() {
+      this.config.screensaverImageIds = [];
     },
-    async clearFilmImages() {
-      this.filmImages = [];
-      await clearFilmImagesStorage();
+    /** 删除图库图片后，清理所有引用（胶片/屏保/奖品） */
+    cleanupImageReferences(deletedId: string) {
+      if (!deletedId) return;
+      this.removeFilmImageId(deletedId);
+      this.removeScreensaverImageId(deletedId);
+      this.config.prizes = this.config.prizes.map((p) =>
+        normalizePrize({
+          ...p,
+          imageUrl: p.imageUrl === deletedId ? "" : p.imageUrl,
+        }),
+      );
     },
   },
-  // 胶片图片走 Tauri 文件系统；这里只持久化小体积的配置与历史，避免写爆 localStorage
+  // 图片库走 Tauri 文件系统；这里只持久化小体积的配置与历史，避免写爆 localStorage
   persist: { pick: ["config", "history"] },
 });

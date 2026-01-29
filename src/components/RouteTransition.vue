@@ -17,6 +17,7 @@ const routeOrder: Record<string, number> = {
   "/": 0,
   "/admin": 1,
   "/history": 2,
+  "/screensaver": 3,
 };
 
 // 判断路由切换方向
@@ -34,6 +35,26 @@ const getTransitionDirection = (from: string, to: string): "forward" | "backward
   const fromOrder = routeOrder[from] ?? 0;
   const toOrder = routeOrder[to] ?? 0;
   return toOrder > fromOrder ? "forward" : "backward";
+};
+
+type TransitionAxis = "x" | "y";
+
+const getTransitionAxisAndDirection = (
+  from: string,
+  to: string
+): { axis: TransitionAxis; direction: "forward" | "backward" } => {
+  const isScreensaverTransition = from === "/screensaver" || to === "/screensaver";
+
+  // 屏保页：强制上下切换（进入屏保=forward，退出屏保=backward）
+  if (isScreensaverTransition) {
+    return {
+      axis: "y",
+      direction: to === "/screensaver" ? "forward" : "backward",
+    };
+  }
+
+  // 其它页面：保留左右切换，并沿用原有方向判断
+  return { axis: "x", direction: getTransitionDirection(from, to) };
 };
 
 // 入场子元素动画上下文，按路由根元素管理，方便在离场时统一清理
@@ -98,11 +119,12 @@ const animateEnterItems = (root: Element) => {
 
 // 过渡动画钩子（整页）
 const onBeforeEnter = (el: Element) => {
-  const direction = getTransitionDirection(previousPath.value, currentPath.value);
+  const { axis, direction } = getTransitionAxisAndDirection(previousPath.value, currentPath.value);
   const isForward = direction === "forward";
 
   gsap.set(el, {
-    x: isForward ? "100%" : "-100%",
+    x: axis === "x" ? (isForward ? "100%" : "-100%") : 0,
+    y: axis === "y" ? (isForward ? "100%" : "-100%") : 0,
     opacity: 0,
   });
 };
@@ -110,6 +132,7 @@ const onBeforeEnter = (el: Element) => {
 const onEnter = (el: Element, done: () => void) => {
   gsap.to(el, {
     x: 0,
+    y: 0,
     opacity: 1,
     duration: 0.4,
     ease: "power2.inOut",
@@ -121,7 +144,7 @@ const onEnter = (el: Element, done: () => void) => {
 };
 
 const onLeave = (el: Element, done: () => void) => {
-  const direction = getTransitionDirection(previousPath.value, currentPath.value);
+  const { axis, direction } = getTransitionAxisAndDirection(previousPath.value, currentPath.value);
   const isForward = direction === "forward";
 
   // 清理子元素动画上下文，避免样式残留
@@ -132,7 +155,8 @@ const onLeave = (el: Element, done: () => void) => {
   }
 
   gsap.to(el, {
-    x: isForward ? "-100%" : "100%",
+    x: axis === "x" ? (isForward ? "-100%" : "100%") : 0,
+    y: axis === "y" ? (isForward ? "-100%" : "100%") : 0,
     opacity: 0,
     duration: 0.4,
     ease: "power2.inOut",

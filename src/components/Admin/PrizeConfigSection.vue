@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { ElMessage } from "element-plus";
-import { Plus } from "@element-plus/icons-vue";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import type { Prize } from "../../types/gacha";
+import { useImageLibraryStore } from "../../stores/imageLibrary";
 
 const props = defineProps<{
   prizes: Prize[];
@@ -15,6 +15,9 @@ const emit = defineEmits<{
   (e: "update-prize", payload: { index: number; patch: Partial<Prize> }): void;
 }>();
 
+const router = useRouter();
+const imageStore = useImageLibraryStore();
+
 // 图片预览相关
 const previewVisible = ref(false);
 const previewImageUrl = ref("");
@@ -24,41 +27,38 @@ const handlePreview = (url: string) => {
   previewVisible.value = true;
 };
 
-// 处理图片上传，将图片转换为 Base64
-const handleImageUpload = (file: File, index: number): Promise<boolean> => {
-  return new Promise((resolve) => {
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      ElMessage.error("只能上传图片文件！");
-      resolve(false);
-      return;
-    }
-
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      ElMessage.error("图片大小不能超过 2MB！");
-      resolve(false);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string;
-      emit("update-prize", { index, patch: { imageUrl: base64 } });
-      ElMessage.success("图片上传成功！");
-      resolve(false); // 返回 false 阻止默认上传行为
-    };
-    reader.onerror = () => {
-      ElMessage.error("图片读取失败！");
-      resolve(false);
-    };
-    reader.readAsDataURL(file);
-  });
-};
-
 const removeImage = (index: number) => {
   emit("update-prize", { index, patch: { imageUrl: "" } });
 };
+
+// 选择图片对话框
+const pickerVisible = ref(false);
+const pickingIndex = ref<number | null>(null);
+const keyword = ref("");
+
+const openPicker = (index: number) => {
+  pickingIndex.value = index;
+  pickerVisible.value = true;
+};
+
+const filtered = computed(() => {
+  const kw = keyword.value.trim().toLowerCase();
+  if (!kw) return imageStore.items;
+  return imageStore.items.filter((it) => (it.originalName ?? it.fileName).toLowerCase().includes(kw));
+});
+
+const chooseImage = (id: string) => {
+  if (pickingIndex.value === null) return;
+  emit("update-prize", { index: pickingIndex.value, patch: { imageUrl: id } });
+  pickerVisible.value = false;
+  pickingIndex.value = null;
+};
+
+const getImageSrc = (imageRef?: string) => imageStore.getUrl(imageRef);
+
+onMounted(async () => {
+  if (!imageStore.hydrated) await imageStore.hydrate();
+});
 </script>
 
 <template>
@@ -72,20 +72,16 @@ const removeImage = (index: number) => {
       <el-table-column label="图片" width="120">
         <template #default="{ row, $index }">
           <div class="image-uploader">
-            <div v-if="row.imageUrl" class="image-preview-container">
-              <el-image :src="row.imageUrl" fit="contain" class="preview-image" @click="handlePreview(row.imageUrl)" />
+            <div v-if="row.imageUrl && getImageSrc(row.imageUrl)" class="image-preview-container">
+              <el-image :src="getImageSrc(row.imageUrl)" fit="contain" class="preview-image"
+                @click="handlePreview(getImageSrc(row.imageUrl))" />
               <div class="image-actions">
                 <el-button type="danger" :icon="'Delete'" size="small" circle @click="removeImage($index)" />
               </div>
             </div>
-            <el-upload v-else class="avatar-uploader" :show-file-list="false"
-              :before-upload="(file: File) => handleImageUpload(file, $index)" accept="image/*">
-              <div class="upload-placeholder">
-                <el-icon>
-                  <Plus />
-                </el-icon>
-              </div>
-            </el-upload>
+            <div v-else class="upload-placeholder" @click="openPicker($index)">
+              <span class="upload-text">选择</span>
+            </div>
           </div>
         </template>
       </el-table-column>
@@ -104,8 +100,7 @@ const removeImage = (index: number) => {
 
       <el-table-column label="库存" width="160">
         <template #default="{ row }">
-          <el-input-number v-model="row.stock" :min="props.useStockAsWeight ? 1 : -1" :step="1"
-            controls-position="right" style="width: 100%" />
+          <el-input-number v-model="row.stock" :min="-1" :step="1" controls-position="right" style="width: 100%" />
         </template>
       </el-table-column>
 
@@ -128,11 +123,31 @@ const removeImage = (index: number) => {
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="previewVisible" title="图片预览" width="500px">
+    <el-dialog v-model="previewVisible" title="图片预览" width="500px" append-to-body>
       <img :src="previewImageUrl" alt="预览图片" style="width: 100%" />
     </el-dialog>
 
-    <p class="prize-tip">库存为 0 时中奖概率为 0；库存为 -1 时忽略库存限制。启用库存模式后，库存必须 ≥ 1。</p>
+    <el-dialog v-model="pickerVisible" title="从图库选择奖品图片" width="900px" append-to-body>
+      <div class="picker-header">
+        <el-input v-model="keyword" placeholder="搜索文件名" clearable style="width: 260px" />
+        <el-button plain @click="router.push('/images')">去图片管理上传/删除</el-button>
+      </div>
+      <div class="picker-scroll">
+        <div class="picker-grid">
+          <button v-for="it in filtered" :key="it.id" class="picker-item" type="button" @click="chooseImage(it.id)">
+            <img class="picker-thumb" :src="it.dataUrl" :alt="it.originalName || it.fileName" />
+            <div class="picker-name">{{ it.originalName || it.fileName }}</div>
+          </button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <p class="prize-tip">
+      库存为 -1：无库存限制（例如折扣码）；<br />
+      库存为 0：该奖品不可抽中；<br />
+      库存 &gt;
+      0：未开启“库存决定概率”时按权重抽取，开启后按库存抽取（库存为 -1 时仍按权重兜底）。
+    </p>
   </section>
 </template>
 
@@ -203,14 +218,63 @@ const removeImage = (index: number) => {
   border-radius: 6px;
   cursor: pointer;
   transition: border-color 0.2s;
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .upload-placeholder:hover {
   border-color: var(--el-color-primary);
 }
 
-.upload-placeholder .el-icon {
-  font-size: 24px;
-  color: var(--el-text-color-secondary);
+.upload-text {
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.picker-scroll {
+  max-height: min(60vh, 560px);
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.picker-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  text-align: left;
+}
+
+.picker-thumb {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.picker-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

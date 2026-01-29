@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useGachaMachine } from "../composables/useGachaMachine";
 import { useGachaStore } from "../stores/gacha";
+import { useImageLibraryStore } from "../stores/imageLibrary";
 import type { Prize } from "../types/gacha";
 import GachaMachine2 from "../components/GachaMachine2/index.vue";
 import FilmStrip from "../components/FilmStrip/FilmStrip.vue";
@@ -11,6 +12,7 @@ import WinnerBubbleList from "../components/WinnerBubbleList.vue";
 type MachineStatus = "idle" | "shaking" | "dropping" | "revealing" | "open";
 
 const store = useGachaStore();
+const imageStore = useImageLibraryStore();
 const { config, canDraw, drawPrize, buildRecord } = useGachaMachine();
 
 const status = ref<MachineStatus>("idle");
@@ -25,7 +27,7 @@ const pendingConfirm = ref(false); // 等待用户点击确认按钮
 const canStart = computed(() => canDraw.value && !isRunning.value);
 
 // 检查是否有胶片图片
-const hasFilmImages = computed(() => store.filmImages.length > 0);
+const hasFilmImages = computed(() => (store.config.filmImageIds ?? []).some((id) => Boolean(imageStore.getUrl(id))));
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

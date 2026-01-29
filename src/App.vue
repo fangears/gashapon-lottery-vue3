@@ -12,6 +12,7 @@ const route = useRoute();
 const navItems = [
   { label: "扭蛋抽奖", path: "/" },
   { label: "后台管理", path: "/admin" },
+  { label: "图片管理", path: "/images" },
   { label: "抽奖记录", path: "/history" },
   { label: "屏保", path: "/screensaver" },
 ];
