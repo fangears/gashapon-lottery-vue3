@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Project-local / tooling (ignored)
+.cursor/
+.shared/
+design-system/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
