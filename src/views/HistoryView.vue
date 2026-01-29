@@ -47,7 +47,7 @@ const isDev = import.meta.env.DEV;
 </script>
 
 <template>
-  <main class="page-container">
+  <main class="page-container" data-enter="up">
     <HistoryRecordsCard :records="history" :timezone="timezone" :is-dev="isDev" :format-time="formatTime"
       @export-excel="exportExcel" @clear-history="clearHistory" />
   </main>

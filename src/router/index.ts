@@ -7,6 +7,7 @@ const router = createRouter({
     { path: "/", name: "gacha", component: () => import("../views/GachaView2.vue") },
     { path: "/admin", name: "admin", component: () => import("../views/AdminView.vue") },
     { path: "/history", name: "history", component: () => import("../views/HistoryView.vue") },
+    { path: "/screensaver", name: "screensaver", component: () => import("../views/ScreensaverView.vue") },
   ],
 });
 

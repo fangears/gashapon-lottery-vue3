@@ -122,7 +122,7 @@ const onLeave = (el: Element, done: () => void) => {
 <template>
   <Transition :css="false" @enter="onEnter" @leave="onLeave">
     <div v-if="isVisible" class="inner-ball">
-      <img :src="ballImage" alt="扭蛋" class="ball-image" />
+      <img :src="ballImage" alt="Gacha Ball" class="ball-image" />
     </div>
   </Transition>
 </template>

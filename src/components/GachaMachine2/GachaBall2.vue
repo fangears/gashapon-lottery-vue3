@@ -388,13 +388,13 @@ onUnmounted(() => {
   <Teleport to="body">
     <Transition :css="false" @enter="onEnter" @leave="onLeave">
       <div v-if="isVisible" ref="ballRef" class="gacha-ball">
-        <img ref="topHalfRef" :src="currentBallImages.top" alt="扭蛋上半部分" class="ball-half top" />
-        <img ref="bottomHalfRef" :src="currentBallImages.bottom" alt="扭蛋下半部分" class="ball-half bottom" />
+        <img ref="topHalfRef" :src="currentBallImages.top" alt="Gacha Ball Top" class="ball-half top" />
+        <img ref="bottomHalfRef" :src="currentBallImages.bottom" alt="Gacha Ball Bottom" class="ball-half bottom" />
         <div ref="prizePaperRef" class="prize-paper">
           <div class="prize-content">
             <div class="prize-title">Congratulations</div>
             <div class="prize-name">{{ prize?.name || 'Mystery Prize' }}</div>
-            <button class="confirm-btn" :disabled="isClosing" @click="handleConfirm">确认</button>
+            <button class="confirm-btn" :disabled="isClosing" @click="handleConfirm">Confirm</button>
           </div>
         </div>
       </div>

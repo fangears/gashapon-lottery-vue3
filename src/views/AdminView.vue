@@ -46,20 +46,20 @@ watch(
 
 <template>
   <main class="page-container admin-page">
-    <section class="admin-section" aria-label="抽奖规则配置">
+    <section class="admin-section" aria-label="抽奖规则配置" data-enter="up">
       <LotteryConfigSection :require-social-account="config.requireSocialAccount"
         :use-stock-as-weight="config.useStockAsWeight" :timezone="config.timezone" :timezones="timezones"
         @update:requireSocialAccount="updateRequireSocialAccount" @update:useStockAsWeight="updateUseStockAsWeight"
         @update:timezone="updateTimezone" />
     </section>
 
-    <section class="admin-section" aria-label="胶片与展示素材管理">
-      <FilmImageManager />
-    </section>
-
-    <section class="admin-section" aria-label="奖品池配置">
+    <section class="admin-section" aria-label="奖品池配置" data-enter="up" data-enter-order="1">
       <PrizeConfigSection :prizes="config.prizes" :use-stock-as-weight="config.useStockAsWeight" @add-prize="addPrize"
         @remove-prize="removePrize" @update-prize="({ index, patch }) => store.updatePrize(index, patch)" />
+    </section>
+
+    <section class="admin-section" aria-label="胶片与展示素材管理" data-enter="up" data-enter-order="2">
+      <FilmImageManager />
     </section>
   </main>
 </template>

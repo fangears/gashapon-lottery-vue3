@@ -594,15 +594,15 @@ watch(
   <div class="gacha-machine-container">
     <div class="machine-body" ref="machineBodyRef">
       <div class="machine-top">
-        <img :src="topImage" alt="扭蛋机上半部分" class="top-image" />
+        <img :src="topImage" alt="Gacha Machine Top" class="top-image" />
         <div class="glass-cover">
-          <img :src="glassCoverImage" alt="玻璃罩" class="glass-cover-image" />
+          <img :src="glassCoverImage" alt="Glass Cover" class="glass-cover-image" />
           <div class="gacha-balls-container" ref="containerRef"></div>
         </div>
       </div>
       <div class="machine-bottom">
-        <img :src="bottomImage" alt="扭蛋机下半部分" class="bottom-image" />
-        <img :src="buttonImage" alt="抽奖按钮" class="gacha-button" @click="handleButtonClick" />
+        <img :src="bottomImage" alt="Gacha Machine Bottom" class="bottom-image" />
+        <img :src="buttonImage" alt="Draw Button" class="gacha-button" @click="handleButtonClick" />
         <div class="exit-gate" ref="exitGateRef">
           <div class="exit-gate-inner">
             <!-- 内部球：在出奖口内部掉落，被 overflow:hidden 裁剪 -->

@@ -34,6 +34,7 @@ const filmSlides = computed(() => {
 
 let tween: gsap.core.Tween | null = null;
 let rafResize = 0;
+let isResizeListening = false;
 
 function updateViewportHeight() {
   viewportHeight.value = viewportRef.value?.clientHeight ?? 0;
@@ -57,6 +58,23 @@ async function waitForAllImagesLoaded(container: HTMLElement) {
 function killTween() {
   tween?.kill();
   tween = null;
+}
+
+function stopAnimations() {
+  if (isResizeListening) {
+    window.removeEventListener("resize", onResize);
+    isResizeListening = false;
+  }
+  cancelAnimationFrame(rafResize);
+  killTween();
+}
+
+function startAnimations() {
+  if (!isResizeListening) {
+    window.addEventListener("resize", onResize, { passive: true });
+    isResizeListening = true;
+  }
+  refresh();
 }
 
 function startGsapLoop() {
@@ -98,8 +116,7 @@ function onResize() {
 }
 
 onMounted(() => {
-  refresh();
-  window.addEventListener("resize", onResize, { passive: true });
+  startAnimations();
 });
 
 watch(
@@ -111,9 +128,7 @@ watch(
 );
 
 onUnmounted(() => {
-  window.removeEventListener("resize", onResize);
-  cancelAnimationFrame(rafResize);
-  killTween();
+  stopAnimations();
 });
 </script>
 
@@ -128,8 +143,8 @@ onUnmounted(() => {
     </div>
 
     <div v-else class="film-empty">
-      <div class="film-empty-title">暂无胶片图片</div>
-      <div class="film-empty-subtitle">请到后台管理 → 胶片列表 上传</div>
+      <div class="film-empty-title">No Film Images</div>
+      <div class="film-empty-subtitle">Please go to Admin Panel → Film List to upload</div>
     </div>
   </div>
 </template>

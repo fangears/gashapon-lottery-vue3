@@ -7,7 +7,6 @@ import type { Prize } from "../types/gacha";
 import GachaMachine2 from "../components/GachaMachine2/index.vue";
 import FilmStrip from "../components/FilmStrip/FilmStrip.vue";
 import WinnerBubbleList from "../components/WinnerBubbleList.vue";
-import backgroundImage from "../assets/扭蛋机组装素材/背景.jpg";
 
 type MachineStatus = "idle" | "shaking" | "dropping" | "revealing" | "open";
 
@@ -138,11 +137,11 @@ const confirmEmail = async () => {
 const cancelEmail = async () => {
   try {
     await ElMessageBox.confirm(
-      "确定不填写邮箱吗？取消后将不会录入邮箱信息。",
-      "确认取消",
+      "Are you sure you don't want to enter your email? Canceling will not record your email information.",
+      "Confirm Cancel",
       {
-        confirmButtonText: "确定取消",
-        cancelButtonText: "继续填写",
+        confirmButtonText: "Confirm Cancel",
+        cancelButtonText: "Continue",
         type: "warning",
       }
     );
@@ -160,25 +159,25 @@ const cancelEmail = async () => {
 </script>
 
 <template>
-  <main class="page-container gacha-page" :style="{ backgroundImage: `url(${backgroundImage})` }">
+  <main class="page-container gacha-page">
     <section class="gacha-layout">
       <!-- 左侧中奖气泡列表（有记录时才显示） -->
-      <div class="gacha-side gacha-side--left" v-if="store.history.length">
+      <div class="gacha-side gacha-side--left" v-if="store.history.length" data-enter="left">
         <WinnerBubbleList :records="store.history" />
       </div>
-      <div v-else class="gacha-side"></div>
+      <div v-else class="gacha-side" data-enter="left"></div>
 
       <!-- 中间扭蛋机 -->
-      <div class="gacha-center">
+      <div class="gacha-center" data-enter="up" data-enter-order="1">
         <GachaMachine2 :status="status" :prize="activePrize" :disabled="!canStart" @start="handleStart"
           @confirm="handlePrizeConfirm" />
       </div>
 
       <!-- 右侧空元素 -->
-      <div v-if="hasFilmImages" class="gacha-side gacha-side--right">
+      <div v-if="hasFilmImages" class="gacha-side gacha-side--right" data-enter="right" data-enter-order="2">
         <FilmStrip />
       </div>
-      <div v-else class="gacha-side"></div>
+      <div v-else class="gacha-side" data-enter="right" data-enter-order="2"></div>
     </section>
 
     <el-dialog v-model="showSocialDialog" title="Enter Social Media Account" width="360px">
@@ -189,12 +188,12 @@ const cancelEmail = async () => {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showEmailDialog" title="填写邮箱" width="360px" :close-on-click-modal="false"
+    <el-dialog v-model="showEmailDialog" title="Enter Email" width="360px" :close-on-click-modal="false"
       :close-on-press-escape="false" :show-close="false">
-      <el-input v-model="email" placeholder="请输入您的邮箱地址" />
+      <el-input v-model="email" placeholder="Please enter your email address" />
       <template #footer>
-        <el-button @click="cancelEmail">取消</el-button>
-        <el-button type="primary" @click="confirmEmail">提交</el-button>
+        <el-button @click="cancelEmail">Cancel</el-button>
+        <el-button type="primary" @click="confirmEmail">Submit</el-button>
       </template>
     </el-dialog>
   </main>
@@ -237,7 +236,7 @@ const cancelEmail = async () => {
 
 .gacha-side--left {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
 }
 

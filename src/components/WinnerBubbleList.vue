@@ -1,34 +1,43 @@
 <template>
   <div class="winner-bubble-panel apple-blur">
-    <TransitionGroup name="bubble" tag="div" class="bubble-list">
-      <div
-        v-for="item in visibleList"
-        :key="item.uid"
-        class="bubble-item"
-      >
-        <div
-          class="avatar"
-          :style="{ background: getAvatarColor(item.uid) }"
-        >
+    <img :src="luckyIp1" alt="" class="decorative-icon decorative-icon-top-left" />
+    <img :src="luckyIp2" alt="" class="decorative-icon decorative-icon-bottom-right" />
+    <div class="header">
+      <h2 class="header-title">Lucky Winners</h2>
+    </div>
+    <div class="bubble-list" aria-live="polite" aria-relevant="additions removals">
+      <div v-for="item in visibleList" :key="item.uid" class="bubble-item" :ref="(el) => setBubbleEl(item.uid, el)">
+        <div class="avatar" :style="{ background: getAvatarColor(item.uid) }">
           {{ getInitial(item.record.email) }}
         </div>
         <div class="content-box">
           <div class="winner-name">
             {{ formatEmail(item.record.email) }}
-            <span class="badge">刚刚</span>
+            <span class="badge">Just Now</span>
           </div>
           <div class="prize-text">
             {{ item.record.prizeName }}
           </div>
         </div>
       </div>
-    </TransitionGroup>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import gsap from "gsap";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+} from "vue";
 import type { GachaRecord } from "../types/gacha";
+import luckyIp1 from "../assets/扭蛋机组装素材/幸运ip-1.png";
+import luckyIp2 from "../assets/扭蛋机组装素材/幸运ip-2.png";
 
 const props = defineProps<{
   records: GachaRecord[];
@@ -49,13 +58,97 @@ type BubbleItem = {
 const visibleList = ref<BubbleItem[]>([]);
 const currentIndex = ref(0);
 let timer: number | undefined;
+let cancelled = false;
+let ticking = false;
 let uidSeed = 0;
 
 const safeRecords = computed(() =>
   (props.records ?? []).filter((r) => r && r.prizeName)
 );
 
-const showNext = () => {
+const bubbleElMap = new Map<number, HTMLElement>();
+const setBubbleEl = (uid: number, el: Element | ComponentPublicInstance | null) => {
+  const resolvedEl: unknown = (el as ComponentPublicInstance | null)?.$el ?? el;
+  if (!resolvedEl) {
+    bubbleElMap.delete(uid);
+    return;
+  }
+  if (resolvedEl instanceof HTMLElement) bubbleElMap.set(uid, resolvedEl);
+};
+
+const prevRects = new Map<number, DOMRect>();
+const captureRects = () => {
+  prevRects.clear();
+  bubbleElMap.forEach((el, uid) => {
+    prevRects.set(uid, el.getBoundingClientRect());
+  });
+};
+const animateLayout = () => {
+  bubbleElMap.forEach((el, uid) => {
+    const prev = prevRects.get(uid);
+    if (!prev) return;
+    const next = el.getBoundingClientRect();
+    const dx = prev.left - next.left;
+    const dy = prev.top - next.top;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+    gsap.set(el, { x: dx, y: dy });
+    gsap.to(el, {
+      x: 0,
+      y: 0,
+      duration: 0.45,
+      ease: "power3.out",
+      overwrite: true,
+    });
+  });
+};
+
+const animateIn = (uid: number) => {
+  const el = bubbleElMap.get(uid);
+  if (!el) return;
+  gsap.fromTo(
+    el,
+    { opacity: 0, y: 18, scale: 0.96 },
+    {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      duration: 0.48,
+      ease: "power3.out",
+      overwrite: true,
+    }
+  );
+};
+
+const animateOut = (uid: number) =>
+  new Promise<void>((resolve) => {
+    const el = bubbleElMap.get(uid);
+    if (!el) return resolve();
+    gsap.to(el, {
+      opacity: 0,
+      y: -14,
+      scale: 0.96,
+      duration: 0.32,
+      ease: "power2.in",
+      overwrite: true,
+      onComplete: () => resolve(),
+    });
+  });
+
+const removeOldestIfNeeded = async () => {
+  if (visibleList.value.length < maxVisible.value) return;
+  const oldest = visibleList.value[0];
+  if (!oldest) return;
+
+  await animateOut(oldest.uid);
+  if (cancelled) return;
+
+  captureRects();
+  visibleList.value = visibleList.value.filter((x) => x.uid !== oldest.uid);
+  await nextTick();
+  animateLayout();
+};
+
+const addNextBubble = async () => {
   if (!safeRecords.value.length) return;
   const list = safeRecords.value;
   const record = list[currentIndex.value % list.length];
@@ -66,19 +159,40 @@ const showNext = () => {
     uid: uidSeed++,
   };
 
-  visibleList.value = [...visibleList.value, bubble].slice(-maxVisible.value);
+  captureRects();
+  visibleList.value = [...visibleList.value, bubble];
+  await nextTick();
+  animateLayout();
+  animateIn(bubble.uid);
 };
 
 const start = () => {
   stop();
   if (!safeRecords.value.length) return;
-  showNext();
-  timer = window.setInterval(showNext, intervalMs.value);
+  cancelled = false;
+
+  const tick = async () => {
+    if (cancelled || ticking) return;
+    ticking = true;
+    try {
+      await removeOldestIfNeeded();
+      if (cancelled) return;
+      await addNextBubble();
+    } finally {
+      ticking = false;
+    }
+
+    if (cancelled) return;
+    timer = window.setTimeout(() => void tick(), intervalMs.value);
+  };
+
+  void tick();
 };
 
 const stop = () => {
+  cancelled = true;
   if (timer != null) {
-    clearInterval(timer);
+    clearTimeout(timer);
     timer = undefined;
   }
 };
@@ -117,45 +231,91 @@ const getInitial = (email?: string) => {
 };
 
 const formatEmail = (email?: string) => {
-  if (!email) return "未知邮箱";
+  if (!email) return "Unknown Email";
   const [name, domain] = email.split("@");
   if (!domain) return email;
   if (name.length <= 2) return `${name[0] ?? ""}***@${domain}`;
   return `${name.slice(0, 2)}***@${domain}`;
 };
 
-onMounted(start);
+onMounted(() => {
+  start();
+});
 onBeforeUnmount(stop);
 </script>
 
 <style scoped>
 .winner-bubble-panel {
+  /* 固定高度：按 5 条气泡计算（更接近 iOS 消息列表的稳定布局） */
+  --bubble-count: 5;
+  --bubble-item-h: 56px;
+  --bubble-gap: 10px;
+  --panel-padding-y: 14px;
+  --header-height: 50px;
+  --header-margin-bottom: 12px;
+
+  position: relative;
   width: 85%;
   max-width: 320px;
-  height: 48%;
-  max-height: 520px;
+  height: calc(var(--panel-padding-y) * 2 + var(--header-height) + var(--header-margin-bottom) + var(--bubble-item-h) * var(--bubble-count) + var(--bubble-gap) * 4);
   border-radius: 20px;
   padding: 14px 12px;
   display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
+  flex-direction: column;
 }
 
 .apple-blur {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.45);
 }
 
+.decorative-icon {
+  position: absolute;
+  height: 120px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.decorative-icon-top-left {
+  top: -47px;
+  left: -36px;
+}
+
+.decorative-icon-bottom-right {
+  bottom: -20px;
+  right: -55px;
+}
+
+.header {
+  position: relative;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--header-margin-bottom);
+  z-index: 2;
+}
+
+.header-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fba29a;
+  margin: 0;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(255, 235, 200, 0.6);
+}
+
 .bubble-list {
   width: 100%;
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  gap: var(--bubble-gap);
 }
 
 .bubble-item {
@@ -164,10 +324,10 @@ onBeforeUnmount(stop);
   padding: 10px 14px;
   border-radius: 18px;
   width: 100%;
-  margin-top: 10px;
+  min-height: var(--bubble-item-h);
   flex-shrink: 0;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-  background: linear-gradient(135deg, #ffffff, #f5f7ff);
+  background: rgba(255, 255, 255, 0.55);
+  will-change: transform, opacity;
 }
 
 .avatar {
@@ -204,10 +364,15 @@ onBeforeUnmount(stop);
   color: #6e6e73;
   line-height: 1.4;
   word-break: break-all;
+  overflow: hidden;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .badge {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(0, 122, 255, 0.12);
   color: #007aff;
   padding: 1px 6px;
   border-radius: 6px;
@@ -216,36 +381,4 @@ onBeforeUnmount(stop);
   margin-left: 6px;
   flex-shrink: 0;
 }
-
-.bubble-enter-active,
-.bubble-leave-active {
-  transition: opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1),
-    transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
-    margin-top 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.bubble-enter-from {
-  opacity: 0;
-  transform: translateY(30px) scale(0.9);
-  margin-top: -32px;
-}
-
-.bubble-enter-to {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  margin-top: 10px;
-}
-
-.bubble-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  margin-top: 10px;
-}
-
-.bubble-leave-to {
-  opacity: 0;
-  transform: translateY(-24px) scale(0.9);
-  margin-top: -12px;
-}
 </style>
-
