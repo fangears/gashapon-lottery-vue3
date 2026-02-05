@@ -4,10 +4,17 @@ import * as XLSX from "xlsx";
 import { ElMessage } from "element-plus";
 import HistoryRecordsCard from "../components/History/HistoryRecordsCard.vue";
 import { useGachaStore } from "../stores/gacha";
+import type { Timezone } from "../types/gacha";
 
 const store = useGachaStore();
 const history = computed(() => store.history);
 const timezone = computed(() => store.config.timezone);
+
+const timezones: Array<{ label: string; value: Timezone }> = [
+  { label: "中国（上海）", value: "Asia/Shanghai" },
+  { label: "美国（洛杉矶）", value: "America/Los_Angeles" },
+  { label: "美国（拉斯维加斯）", value: "America/Las_Vegas" },
+];
 
 const formatTime = (timestamp: number) =>
   new Intl.DateTimeFormat("zh-CN", {
@@ -48,7 +55,8 @@ const isDev = import.meta.env.DEV;
 
 <template>
   <main class="page-container" data-enter="up">
-    <HistoryRecordsCard :records="history" :timezone="timezone" :is-dev="isDev" :format-time="formatTime"
-      @export-excel="exportExcel" @clear-history="clearHistory" />
+    <HistoryRecordsCard :records="history" :timezone="timezone" :timezones="timezones" :is-dev="isDev"
+      :format-time="formatTime" @update:timezone="(v) => store.setTimezone(v)" @export-excel="exportExcel"
+      @clear-history="clearHistory" />
   </main>
 </template>

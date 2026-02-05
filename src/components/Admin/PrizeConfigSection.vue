@@ -116,6 +116,12 @@ onMounted(async () => {
         </template>
       </el-table-column>
 
+      <el-table-column label="Lucky Winners" width="140">
+        <template #default="{ row }">
+          <el-switch v-model="row.showInLuckyWinners" />
+        </template>
+      </el-table-column>
+
       <el-table-column label="操作" width="80">
         <template #default="{ $index }">
           <el-button type="danger" plain @click="emit('remove-prize', $index)">删除</el-button>

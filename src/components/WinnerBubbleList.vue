@@ -8,11 +8,11 @@
     <div class="bubble-list" aria-live="polite" aria-relevant="additions removals">
       <div v-for="item in visibleList" :key="item.uid" class="bubble-item" :ref="(el) => setBubbleEl(item.uid, el)">
         <div class="avatar" :style="{ background: getAvatarColor(item.uid) }">
-          {{ getInitial(item.record.email) }}
+          {{ getAvatarText(item.record) }}
         </div>
         <div class="content-box">
           <div class="winner-name">
-            {{ formatEmail(item.record.email) }}
+            {{ formatDisplayName(item.record) }}
             <span class="badge">Just Now</span>
           </div>
           <div class="prize-text">
@@ -36,6 +36,7 @@ import {
   type ComponentPublicInstance,
 } from "vue";
 import type { GachaRecord } from "../types/gacha";
+import { useGachaStore } from "../stores/gacha";
 import luckyIp1 from "../assets/扭蛋机组装素材/幸运ip-1.png";
 import luckyIp2 from "../assets/扭蛋机组装素材/幸运ip-2.png";
 
@@ -62,8 +63,23 @@ let cancelled = false;
 let ticking = false;
 let uidSeed = 0;
 
+const store = useGachaStore();
+
+const prizeVisibleMap = computed(() => {
+  const map = new Map<string, boolean>();
+  for (const prize of store.config.prizes ?? []) {
+    map.set(prize.id, prize.showInLuckyWinners !== false);
+  }
+  return map;
+});
+
 const safeRecords = computed(() =>
-  (props.records ?? []).filter((r) => r && r.prizeName)
+  (props.records ?? []).filter((r) => {
+    if (!r || !r.prizeName) return false;
+    // 未找到对应奖品配置时，默认展示（兼容删除奖品/旧数据）
+    const visible = prizeVisibleMap.value.get(r.prizeId);
+    return visible ?? true;
+  })
 );
 
 const bubbleElMap = new Map<number, HTMLElement>();
@@ -236,6 +252,40 @@ const formatEmail = (email?: string) => {
   if (!domain) return email;
   if (name.length <= 2) return `${name[0] ?? ""}***@${domain}`;
   return `${name.slice(0, 2)}***@${domain}`;
+};
+
+/** 按配置时区格式化抽奖时间 */
+const formatDrawTime = (drawnAt: number, timezone: string) => {
+  const date = new Date(drawnAt);
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+};
+
+/** 有邮箱显示格式化邮箱，无邮箱显示抽奖时间（按时区） */
+const formatDisplayName = (record: GachaRecord) => {
+  if (record.email?.trim()) return formatEmail(record.email);
+  const tz = store.config.timezone ?? "Asia/Shanghai";
+  return formatDrawTime(record.drawnAt, tz);
+};
+
+/** 有邮箱显示首字符，无邮箱按抽奖时间显示 am/pm */
+const getAvatarText = (record: GachaRecord) => {
+  if (record.email?.trim()) return getInitial(record.email);
+  const tz = store.config.timezone ?? "Asia/Shanghai";
+  const date = new Date(record.drawnAt);
+  const hour = parseInt(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "numeric",
+      hour12: false,
+    }).format(date),
+    10
+  );
+  return hour < 12 ? "am" : "pm";
 };
 
 onMounted(() => {

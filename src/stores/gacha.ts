@@ -3,6 +3,22 @@ import type { GachaConfig, GachaRecord, Prize, Timezone } from "../types/gacha";
 
 const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+const normalizeShowInLuckyWinners = (value: unknown): boolean => {
+  if (value === true) return true;
+  if (value === false) return false;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    if (v === "true" || v === "1" || v === "yes" || v === "y") return true;
+    if (v === "false" || v === "0" || v === "no" || v === "n") return false;
+  }
+  // 默认展示
+  return true;
+};
+
 const createDefaultConfig = (): GachaConfig => ({
   requireSocialAccount: false,
   useStockAsWeight: false,
@@ -17,6 +33,7 @@ const createDefaultConfig = (): GachaConfig => ({
       stock: -1,
       weight: 40,
       needEmail: false,
+      showInLuckyWinners: true,
     },
     {
       id: createId(),
@@ -25,6 +42,7 @@ const createDefaultConfig = (): GachaConfig => ({
       stock: 5,
       weight: 35,
       needEmail: false,
+      showInLuckyWinners: true,
     },
     {
       id: createId(),
@@ -33,6 +51,7 @@ const createDefaultConfig = (): GachaConfig => ({
       stock: 1,
       weight: 5,
       needEmail: true,
+      showInLuckyWinners: true,
     },
   ],
 });
@@ -42,6 +61,7 @@ const normalizePrize = (prize: Prize): Prize => ({
   name: prize.name ?? "",
   description: prize.description ?? "",
   stock: Number.isFinite(prize.stock) ? prize.stock : -1,
+  showInLuckyWinners: normalizeShowInLuckyWinners((prize as Prize).showInLuckyWinners),
   imageUrl: prize.imageUrl ?? "",
   weight: Number.isFinite(prize.weight) ? prize.weight : 1,
   needEmail: Boolean(prize.needEmail),
@@ -96,6 +116,7 @@ export const useGachaStore = defineStore("gacha", {
           stock: -1,
           weight: 1,
           needEmail: false,
+          showInLuckyWinners: true,
           imageUrl: "",
         }),
       );

@@ -5,6 +5,8 @@ export interface Prize {
   name: string;
   description?: string;
   stock: number;
+  /** 是否在 Lucky Winners（气泡榜）中展示该奖品的中奖记录。默认 true。 */
+  showInLuckyWinners?: boolean;
   /**
    * 图片引用：
    * - 新版：存储图片库的 id（文件名）

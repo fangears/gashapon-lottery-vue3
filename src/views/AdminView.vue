@@ -2,7 +2,6 @@
 import { computed, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useGachaStore } from "../stores/gacha";
-import type { Timezone } from "../types/gacha";
 import FilmImageManager from "../components/FilmStrip/FilmImageManager.vue";
 import PrizeConfigSection from "../components/Admin/PrizeConfigSection.vue";
 import LotteryConfigSection from "../components/Admin/LotteryConfigSection.vue";
@@ -10,17 +9,10 @@ import LotteryConfigSection from "../components/Admin/LotteryConfigSection.vue";
 const store = useGachaStore();
 const config = computed(() => store.config);
 
-const timezones: Array<{ label: string; value: Timezone }> = [
-  { label: "中国（上海）", value: "Asia/Shanghai" },
-  { label: "美国（洛杉矶）", value: "America/Los_Angeles" },
-  { label: "美国（拉斯维加斯）", value: "America/Las_Vegas" },
-];
-
 const addPrize = () => store.addPrize();
 
 const updateRequireSocialAccount = (value: boolean) => store.toggleRequireSocialAccount(value);
 const updateUseStockAsWeight = (value: boolean) => store.toggleUseStockAsWeight(value);
-const updateTimezone = (value: Timezone) => store.setTimezone(value);
 
 const removePrize = (index: number) => {
   if (config.value.prizes.length <= 1) {
@@ -48,9 +40,9 @@ watch(
   <main class="page-container admin-page">
     <section class="admin-section" aria-label="抽奖规则配置" data-enter="up">
       <LotteryConfigSection :require-social-account="config.requireSocialAccount"
-        :use-stock-as-weight="config.useStockAsWeight" :timezone="config.timezone" :timezones="timezones"
+        :use-stock-as-weight="config.useStockAsWeight"
         @update:requireSocialAccount="updateRequireSocialAccount" @update:useStockAsWeight="updateUseStockAsWeight"
-        @update:timezone="updateTimezone" />
+      />
     </section>
 
     <section class="admin-section" aria-label="奖品池配置" data-enter="up" data-enter-order="1">

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { GachaRecord, Timezone } from "../../types/gacha";
 
+type TimezoneOption = { label: string; value: Timezone };
+
 const props = defineProps<{
   records: GachaRecord[];
   timezone: Timezone;
+  timezones: TimezoneOption[];
   isDev: boolean;
   formatTime: (timestamp: number) => string;
 }>();
@@ -11,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "export-excel"): void;
   (e: "clear-history"): void;
+  (e: "update:timezone", value: Timezone): void;
 }>();
 </script>
 
@@ -20,6 +24,10 @@ const emit = defineEmits<{
       <div class="history-header">
         <h2>记录列表</h2>
         <div class="history-actions">
+          <el-select :model-value="props.timezone" placeholder="请选择时区" style="width: 240px"
+            @update:model-value="(v: Timezone) => emit('update:timezone', v)">
+            <el-option v-for="item in props.timezones" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
           <el-button v-if="props.isDev" type="danger" @click="emit('clear-history')">清空记录</el-button>
           <el-button type="primary" @click="emit('export-excel')">导出 Excel</el-button>
         </div>

@@ -392,7 +392,7 @@ onUnmounted(() => {
         <img ref="bottomHalfRef" :src="currentBallImages.bottom" alt="Gacha Ball Bottom" class="ball-half bottom" />
         <div ref="prizePaperRef" class="prize-paper">
           <div class="prize-content">
-            <div class="prize-title">Congratulations</div>
+            <div v-if="prize?.showInLuckyWinners !== false" class="prize-title">Congratulations</div>
             <div class="prize-name">{{ prize?.name || 'Mystery Prize' }}</div>
             <button class="confirm-btn" :disabled="isClosing" @click="handleConfirm">Confirm</button>
           </div>
