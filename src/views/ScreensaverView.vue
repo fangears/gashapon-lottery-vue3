@@ -71,7 +71,8 @@ const calculateTransform = (offset: number) => {
 
   const scale = isActive ? 1 : CONFIG.scaleDown;
   const zIndex = 100 - absOffset;
-  const opacity = isActive ? 1 : Math.max(0.4, 1 - absOffset * 0.2);
+  // 所有卡片保持不透明，去掉“非主图半透明”效果
+  const opacity = 1;
   const z = isActive ? 0 : -100 - absOffset * 50;
 
   return { xPercent, yPercent, rotateY, scale, zIndex, opacity, z };
@@ -133,7 +134,8 @@ const animateCards = (newActiveIndex: number, oldActiveIndex: number | null) => 
     const highlightEl = el.querySelector(".overlay-highlight");
 
     if (shadowEl) {
-      const nextOpacity = newOffset === 0 ? 0 : 0.6;
+      // 取消非主图的半透明遮罩效果，统一为 0
+      const nextOpacity = 0;
       if (oldActiveIndex === null) {
         gsap.set(shadowEl, { opacity: nextOpacity });
       } else {
@@ -253,7 +255,10 @@ watch(
   }
 );
 
-onMounted(() => {
+onMounted(async () => {
+  if (!imageStore.hydrated) await imageStore.hydrate();
+  const ids = (store.config.screensaverImageIds ?? []).filter((id) => !/^data:image\//i.test(id));
+  if (ids.length) await imageStore.ensureUrlsLoadedBatch(ids, 6);
   if (len.value > 0) {
     animateCards(activeIndex.value, null);
     startAutoPlay();
@@ -269,17 +274,7 @@ onUnmounted(() => {
 
 <template>
   <main class="screensaver-page">
-    <!-- 1. 动态背景层 -->
-    <div class="background-layer">
-      <div v-for="(img, idx) in images" :key="'bg-' + img.id" class="background-image" :style="{
-        backgroundImage: `url(${img.url})`,
-        opacity: activeIndex === idx ? 0.3 : 0,
-        filter: 'blur(50px) brightness(0.5)'
-      }" />
-      <div class="noise-overlay" />
-    </div>
-
-    <!-- 2. 主体内容区 -->
+    <!-- 主体内容区（纯黑背景） -->
     <div class="content-area" @mouseenter="pauseAutoPlay" @mouseleave="resumeAutoPlay">
       <!-- 标题区（有 title/desc 时显示） -->
       <div v-if="activeImage.title || activeImage.desc" :key="activeImage.id" class="title-area animate-fade-in-up">
@@ -319,7 +314,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  background: #171717;
+  background: #000000;
   color: white;
   position: relative;
   overflow: hidden;
@@ -353,28 +348,6 @@ onUnmounted(() => {
 
 .card-shadow {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-}
-
-.background-layer {
-  position: absolute;
-  inset: 0;
-  transition: opacity 0.7s ease-in-out;
-}
-
-.background-image {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transition: opacity 1000ms ease;
-}
-
-.noise-overlay {
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-  background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22 opacity=%220.05%22/%3E%3C/svg%3E');
 }
 
 .content-area {

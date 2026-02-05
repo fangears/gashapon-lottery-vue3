@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus } from "@element-plus/icons-vue";
 import { useGachaStore } from "../stores/gacha";
@@ -20,6 +20,12 @@ const list = computed(() => {
     return name.includes(kw) || (it.tags ?? []).some((t) => String(t).toLowerCase().includes(kw));
   });
 });
+
+/** 列表可见时按批加载缩略图，避免一次性加载全部导致卡顿 */
+function loadVisibleUrls() {
+  const ids = list.value.slice(0, 24).map((it) => it.id);
+  if (ids.length) imageStore.ensureUrlsLoadedBatch(ids, 6);
+}
 
 const validateImage = (file: File) => {
   const isImage = file.type.startsWith("image/");
@@ -70,10 +76,10 @@ const handleDelete = async (id: string) => {
 };
 
 onMounted(async () => {
-  if (!imageStore.hydrated) {
-    await imageStore.hydrate();
-  }
+  if (!imageStore.hydrated) await imageStore.hydrate();
+  loadVisibleUrls();
 });
+watch(list, () => loadVisibleUrls(), { immediate: false });
 </script>
 
 <template>
@@ -101,7 +107,7 @@ onMounted(async () => {
 
       <div v-if="list.length" class="grid">
         <div v-for="it in list" :key="it.id" class="item">
-          <el-image :src="it.dataUrl" fit="cover" class="thumb" @click="handlePreview(it.dataUrl)" />
+          <el-image :src="imageStore.getUrl(it.id)" fit="cover" class="thumb" @click="handlePreview(imageStore.getUrl(it.id))" />
           <div class="meta">
             <div class="name" :title="it.originalName || it.fileName">{{ it.originalName || it.fileName }}</div>
             <div class="tags" v-if="it.tags?.length">#{{ it.tags.join(" #") }}</div>

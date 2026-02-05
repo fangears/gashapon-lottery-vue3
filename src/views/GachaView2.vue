@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useGachaMachine } from "../composables/useGachaMachine";
 import { useGachaStore } from "../stores/gacha";
@@ -37,6 +37,12 @@ const isSocialAccountDuplicate = (account: string) => {
 
 // 检查是否有胶片图片
 const hasFilmImages = computed(() => (store.config.filmImageIds ?? []).some((id) => Boolean(imageStore.getUrl(id))));
+
+onMounted(async () => {
+  if (!imageStore.hydrated) await imageStore.hydrate();
+  const ids = (store.config.filmImageIds ?? []).filter((id) => !/^data:image\//i.test(id));
+  if (ids.length) imageStore.ensureUrlsLoadedBatch(ids, 6);
+});
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

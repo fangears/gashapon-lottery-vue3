@@ -175,17 +175,24 @@ export async function saveImageToLibrary(base64DataUrl: string, originalName?: s
   return item;
 }
 
+/** 分块转 base64，避免大文件时逐字符拼接导致 O(n²) 卡顿 */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  const chunkSize = 8192;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
+  }
+  return btoa(binary);
+}
+
 export async function loadImageFromLibraryAsDataUrl(fileNameOrId: string): Promise<string> {
   const fileName = fileNameOrId;
   const filePath = `${IMAGE_LIBRARY_DIR}/${fileName}`;
   const data = await readFile(filePath, { baseDir: BaseDirectory.AppData });
 
   const bytes = data as Uint8Array;
-  let binaryString = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binaryString += String.fromCharCode(bytes[i]);
-  }
-  const base64 = btoa(binaryString);
+  const base64 = uint8ArrayToBase64(bytes);
 
   const ext = fileName.split(".").pop()?.toLowerCase();
   const mimeType =

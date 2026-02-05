@@ -32,6 +32,11 @@ const openPicker = () => {
   pickerVisible.value = true;
 };
 
+const onPickerOpen = () => {
+  const ids = imageStore.items.slice(0, 30).map((it) => it.id);
+  if (ids.length) imageStore.ensureUrlsLoadedBatch(ids, 6);
+};
+
 const toggleSelected = (id: string) => {
   const next = tempSelected.value.slice();
   const idx = next.indexOf(id);
@@ -55,6 +60,8 @@ const clearSelection = () => {
 
 onMounted(async () => {
   if (!imageStore.hydrated) await imageStore.hydrate();
+  const ids = selectedIds.value.filter((id) => !/^data:image\//i.test(id));
+  if (ids.length) imageStore.ensureUrlsLoadedBatch(ids, 6);
 });
 
 watch(
@@ -99,12 +106,12 @@ watch(
       <img :src="previewImageUrl" alt="预览图片" style="width: 100%" />
     </el-dialog>
 
-    <el-dialog v-model="pickerVisible" title="选择胶片图片" width="900px" append-to-body>
+    <el-dialog v-model="pickerVisible" title="选择胶片图片" width="900px" append-to-body @opened="onPickerOpen">
       <div class="picker-scroll">
         <div class="picker-grid">
           <button v-for="it in imageStore.items" :key="it.id" class="picker-item"
             :class="{ active: tempSelected.includes(it.id) }" type="button" @click="toggleSelected(it.id)">
-            <img class="picker-thumb" :src="it.dataUrl" :alt="it.originalName || it.fileName" />
+            <img class="picker-thumb" :src="imageStore.getUrl(it.id)" :alt="it.originalName || it.fileName" />
             <div class="picker-name">{{ it.originalName || it.fileName }}</div>
           </button>
         </div>

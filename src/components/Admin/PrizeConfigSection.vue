@@ -56,6 +56,12 @@ const chooseImage = (id: string) => {
 
 const getImageSrc = (imageRef?: string) => imageStore.getUrl(imageRef);
 
+/** 选择器打开时按批加载缩略图 */
+const onPickerOpen = () => {
+  const ids = filtered.value.slice(0, 30).map((it) => it.id);
+  if (ids.length) imageStore.ensureUrlsLoadedBatch(ids, 6);
+};
+
 onMounted(async () => {
   if (!imageStore.hydrated) await imageStore.hydrate();
 });
@@ -133,7 +139,7 @@ onMounted(async () => {
       <img :src="previewImageUrl" alt="预览图片" style="width: 100%" />
     </el-dialog>
 
-    <el-dialog v-model="pickerVisible" title="从图库选择奖品图片" width="900px" append-to-body>
+    <el-dialog v-model="pickerVisible" title="从图库选择奖品图片" width="900px" append-to-body @opened="onPickerOpen">
       <div class="picker-header">
         <el-input v-model="keyword" placeholder="搜索文件名" clearable style="width: 260px" />
         <el-button plain @click="router.push('/images')">去图片管理上传/删除</el-button>
@@ -141,7 +147,7 @@ onMounted(async () => {
       <div class="picker-scroll">
         <div class="picker-grid">
           <button v-for="it in filtered" :key="it.id" class="picker-item" type="button" @click="chooseImage(it.id)">
-            <img class="picker-thumb" :src="it.dataUrl" :alt="it.originalName || it.fileName" />
+            <img class="picker-thumb" :src="getImageSrc(it.id)" :alt="it.originalName || it.fileName" />
             <div class="picker-name">{{ it.originalName || it.fileName }}</div>
           </button>
         </div>
