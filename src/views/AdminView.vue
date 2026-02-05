@@ -6,6 +6,7 @@ import FilmImageManager from "../components/FilmStrip/FilmImageManager.vue";
 import PrizeConfigSection from "../components/Admin/PrizeConfigSection.vue";
 import LotteryConfigSection from "../components/Admin/LotteryConfigSection.vue";
 import ScreensaverConfigSection from "../components/Admin/ScreensaverConfigSection.vue";
+import MachineTopImageConfigSection from "../components/Admin/MachineTopImageConfigSection.vue";
 
 const store = useGachaStore();
 const config = computed(() => store.config);
@@ -21,6 +22,10 @@ const updateScreensaverEnabled = (value: boolean) => {
 
 const updateScreensaverIdleMinutes = (value: number) => {
   store.setScreensaverIdleMinutes(value);
+};
+
+const updateGachaMachineTopImage = (value: Parameters<typeof store.setGachaMachineTopImage>[0]) => {
+  store.setGachaMachineTopImage(value);
 };
 
 const removePrize = (index: number) => {
@@ -75,7 +80,14 @@ watch(
       />
     </section>
 
-    <section class="admin-section" aria-label="胶片与展示素材管理" data-enter="up" data-enter-order="3">
+    <section class="admin-section" aria-label="扭蛋机主体图片" data-enter="up" data-enter-order="3">
+      <MachineTopImageConfigSection
+        :value="config.gachaMachineTopImage"
+        @update:value="updateGachaMachineTopImage"
+      />
+    </section>
+
+    <section class="admin-section" aria-label="胶片与展示素材管理" data-enter="up" data-enter-order="4">
       <FilmImageManager />
     </section>
   </main>

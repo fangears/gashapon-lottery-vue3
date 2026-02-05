@@ -3,7 +3,9 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 // @ts-ignore
 import Matter from "matter-js";
 import type { Prize } from "../../types/gacha";
-import topImage from "../../assets/gacha-machine-assets/gacha-top-half.png";
+import { useGachaStore } from "../../stores/gacha";
+import topImage2 from "../../assets/gacha-machine-assets/gacha-machine-top-2.png";
+import topImageHalf from "../../assets/gacha-machine-assets/gacha-top-half.png";
 import bottomImage from "../../assets/gacha-machine-assets/gacha-bottom-half.png";
 import glassCoverImage from "../../assets/gacha-machine-assets/glass-cover.png";
 import buttonImage from "../../assets/gacha-machine-assets/draw-button.png";
@@ -29,6 +31,11 @@ const emit = defineEmits<{
 }>();
 
 const { Engine, World, Bodies, Runner, Body, Events } = Matter;
+
+const gachaStore = useGachaStore();
+const topImage = computed(() =>
+  gachaStore.config.gachaMachineTopImage === "gacha-machine-top-2" ? topImage2 : topImageHalf
+);
 
 const containerRef = ref<HTMLElement | null>(null);
 const machineBodyRef = ref<HTMLElement | null>(null);

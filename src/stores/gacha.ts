@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import type { GachaConfig, GachaRecord, Prize, Timezone } from "../types/gacha";
+import type { GachaConfig, GachaRecord, GachaMachineTopImageKey, Prize, Timezone } from "../types/gacha";
 
 const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -25,6 +25,7 @@ const createDefaultConfig = (): GachaConfig => ({
   timezone: "Asia/Shanghai",
   screensaverEnabled: true,
   screensaverIdleMinutes: 5,
+  gachaMachineTopImage: "gacha-top-half",
   filmImageIds: [],
   screensaverImageIds: [],
   prizes: [
@@ -75,6 +76,13 @@ const normalizeConfig = (config?: GachaConfig): GachaConfig => {
   // - 旧版只有 filmImageIds（胶片/屏保共用）
   // - 新版拆分 screensaverImageIds；若缺失则默认沿用 filmImageIds
   const screensaverImageIdsFallback = (base as Partial<GachaConfig>).screensaverImageIds ?? base.filmImageIds ?? [];
+  const topImageKey = (base as Partial<GachaConfig>).gachaMachineTopImage;
+  const validTopImageKeys: GachaMachineTopImageKey[] = ["gacha-machine-top-2", "gacha-top-half"];
+  const gachaMachineTopImage =
+    topImageKey && validTopImageKeys.includes(topImageKey as GachaMachineTopImageKey)
+      ? (topImageKey as GachaMachineTopImageKey)
+      : "gacha-top-half";
+
   return {
     requireSocialAccount: Boolean(base.requireSocialAccount),
     useStockAsWeight: Boolean(base.useStockAsWeight),
@@ -85,6 +93,7 @@ const normalizeConfig = (config?: GachaConfig): GachaConfig => {
       (base as Partial<GachaConfig>).screensaverIdleMinutes! > 0
         ? (base as Partial<GachaConfig>).screensaverIdleMinutes!
         : 5,
+    gachaMachineTopImage,
     filmImageIds: (base.filmImageIds ?? []).filter(Boolean),
     screensaverImageIds: (screensaverImageIdsFallback ?? []).filter(Boolean),
     prizes: (base.prizes ?? []).map(normalizePrize),
@@ -115,6 +124,9 @@ export const useGachaStore = defineStore("gacha", {
     setScreensaverIdleMinutes(minutes: number) {
       const safe = Number.isFinite(minutes) && minutes > 0 ? minutes : 1;
       this.config.screensaverIdleMinutes = safe;
+    },
+    setGachaMachineTopImage(key: GachaMachineTopImageKey) {
+      this.config.gachaMachineTopImage = key;
     },
     toggleUseStockAsWeight(value: boolean) {
       this.config.useStockAsWeight = value;

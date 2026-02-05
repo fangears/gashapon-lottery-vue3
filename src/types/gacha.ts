@@ -17,6 +17,9 @@ export interface Prize {
   needEmail?: boolean;
 }
 
+/** 扭蛋机主体顶部图片选项（对应 assets 中的文件名，不含扩展名） */
+export type GachaMachineTopImageKey = "gacha-machine-top-2" | "gacha-top-half";
+
 export interface GachaConfig {
   requireSocialAccount: boolean;
   useStockAsWeight: boolean;
@@ -25,6 +28,8 @@ export interface GachaConfig {
   screensaverEnabled: boolean;
   /** 距离上一次用户操作多久（分钟）后进入屏保页面 */
   screensaverIdleMinutes: number;
+  /** 扭蛋机主体顶部使用的图片：gacha-machine-top-2 或 gacha-top-half */
+  gachaMachineTopImage: GachaMachineTopImageKey;
   /** 胶片/屏保展示用图片：存储图片库 id 列表（按顺序展示） */
   filmImageIds: string[];
   /** 屏保展示用图片：存储图片库 id 列表（按顺序展示） */
