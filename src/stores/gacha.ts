@@ -138,6 +138,14 @@ export const useGachaStore = defineStore("gacha", {
     clearHistory() {
       this.history = [];
     },
+    updateRecord(id: string, patch: Partial<Omit<GachaRecord, "id">>) {
+      const index = this.history.findIndex((r) => r.id === id);
+      if (index === -1) return;
+      this.history[index] = { ...this.history[index], ...patch };
+    },
+    removeRecord(id: string) {
+      this.history = this.history.filter((r) => r.id !== id);
+    },
 
     setFilmImageIds(ids: string[]) {
       this.config.filmImageIds = (ids ?? []).filter(Boolean);

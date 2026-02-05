@@ -265,15 +265,17 @@ const formatDrawTime = (drawnAt: number, timezone: string) => {
   }).format(date);
 };
 
-/** 有邮箱显示格式化邮箱，无邮箱显示抽奖时间（按时区） */
+/** 优先社媒，其次邮箱，最后时间兜底 */
 const formatDisplayName = (record: GachaRecord) => {
+  if (record.socialAccount?.trim()) return record.socialAccount.trim();
   if (record.email?.trim()) return formatEmail(record.email);
   const tz = store.config.timezone ?? "Asia/Shanghai";
   return formatDrawTime(record.drawnAt, tz);
 };
 
-/** 有邮箱显示首字符，无邮箱按抽奖时间显示 am/pm */
+/** 优先社媒首字符，其次邮箱首字符，最后按抽奖时间显示 am/pm */
 const getAvatarText = (record: GachaRecord) => {
+  if (record.socialAccount?.trim()) return (record.socialAccount.trim()[0] ?? "U").toUpperCase();
   if (record.email?.trim()) return getInitial(record.email);
   const tz = store.config.timezone ?? "Asia/Shanghai";
   const date = new Date(record.drawnAt);

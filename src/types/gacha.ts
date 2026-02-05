@@ -1,4 +1,4 @@
-export type Timezone = "Asia/Shanghai" | "America/Los_Angeles" | "America/Las_Vegas";
+export type Timezone = "Asia/Shanghai" | "America/Las_Vegas";
 
 export interface Prize {
   id: string;

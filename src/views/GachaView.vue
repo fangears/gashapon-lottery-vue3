@@ -23,6 +23,15 @@ const pendingConfirm = ref(false); // 等待用户点击确认按钮
 
 const canStart = computed(() => canDraw.value && !isRunning.value);
 
+/** 当开启「填写社媒账号」时，校验社媒账号是否已在历史记录中（不可重复） */
+const isSocialAccountDuplicate = (account: string) => {
+  if (!account.trim()) return false;
+  const normalized = account.trim().toLowerCase();
+  return store.history.some(
+    (r) => r.socialAccount != null && r.socialAccount.trim().toLowerCase() === normalized
+  );
+};
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const consumeStock = (prize: Prize) => {
@@ -43,7 +52,9 @@ const resetFlow = async () => {
   await delay(800);
   status.value = "idle";
   activePrize.value = null;
+  // 每次抽奖流程结束后清空邮箱和社媒账号，方便下一次重新填写
   email.value = "";
+  socialAccount.value = "";
   isRunning.value = false;
 };
 
@@ -101,7 +112,8 @@ const handlePrizeConfirm = async () => {
 };
 
 const handleStart = () => {
-  if (config.value.requireSocialAccount && !socialAccount.value.trim()) {
+  // 若开启“填写社媒账号开始抽奖”，每次点击开始都弹出社媒填写弹窗
+  if (config.value.requireSocialAccount) {
     showSocialDialog.value = true;
     return;
   }
@@ -111,6 +123,10 @@ const handleStart = () => {
 const confirmSocial = () => {
   if (!socialAccount.value.trim()) {
     ElMessage.warning("Please enter your social media account to continue.");
+    return;
+  }
+  if (isSocialAccountDuplicate(socialAccount.value)) {
+    ElMessage.warning("This social media account has already participated in the lottery and cannot be used again.");
     return;
   }
   showSocialDialog.value = false;

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Delete, Edit } from "@element-plus/icons-vue";
+import { ElMessageBox } from "element-plus";
 import type { GachaRecord, Timezone } from "../../types/gacha";
 
 type TimezoneOption = { label: string; value: Timezone };
@@ -15,7 +17,29 @@ const emit = defineEmits<{
   (e: "export-excel"): void;
   (e: "clear-history"): void;
   (e: "update:timezone", value: Timezone): void;
+  (e: "edit-record", record: GachaRecord): void;
+  (e: "delete-record", record: GachaRecord): void;
 }>();
+
+const handleClearHistory = () => {
+  ElMessageBox.confirm("确定要清空所有抽奖记录吗？此操作不可恢复。", "清空记录", {
+    confirmButtonText: "确定清空",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => emit("clear-history"))
+    .catch(() => {});
+};
+
+const handleDeleteRecord = (row: GachaRecord) => {
+  ElMessageBox.confirm(`确定要删除该条记录（${row.prizeName}）吗？`, "删除记录", {
+    confirmButtonText: "确定删除",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => emit("delete-record", row))
+    .catch(() => {});
+};
 </script>
 
 <template>
@@ -28,7 +52,7 @@ const emit = defineEmits<{
             @update:model-value="(v: Timezone) => emit('update:timezone', v)">
             <el-option v-for="item in props.timezones" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
-          <el-button v-if="props.isDev" type="danger" @click="emit('clear-history')">清空记录</el-button>
+          <el-button type="danger" @click="handleClearHistory">清空记录</el-button>
           <el-button type="primary" @click="emit('export-excel')">导出 Excel</el-button>
         </div>
       </div>
@@ -39,6 +63,12 @@ const emit = defineEmits<{
         <el-table-column label="抽奖时间" min-width="180">
           <template #default="{ row }">
             {{ props.formatTime(row.drawnAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" :icon="Edit" @click="emit('edit-record', row)" title="编辑" />
+            <el-button link type="danger" :icon="Delete" @click="handleDeleteRecord(row)" title="删除" />
           </template>
         </el-table-column>
       </el-table>
