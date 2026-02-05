@@ -169,6 +169,10 @@ onMounted(async () => {
   gap: var(--space-md);
 }
 
+.admin-prizes :deep(.el-table .cell) {
+  padding: 0;
+}
+
 .prize-header {
   display: flex;
   align-items: center;

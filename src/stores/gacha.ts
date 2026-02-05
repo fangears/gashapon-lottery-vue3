@@ -23,6 +23,8 @@ const createDefaultConfig = (): GachaConfig => ({
   requireSocialAccount: false,
   useStockAsWeight: false,
   timezone: "Asia/Shanghai",
+  screensaverEnabled: true,
+  screensaverIdleMinutes: 5,
   filmImageIds: [],
   screensaverImageIds: [],
   prizes: [
@@ -77,6 +79,12 @@ const normalizeConfig = (config?: GachaConfig): GachaConfig => {
     requireSocialAccount: Boolean(base.requireSocialAccount),
     useStockAsWeight: Boolean(base.useStockAsWeight),
     timezone: base.timezone ?? "Asia/Shanghai",
+    screensaverEnabled: typeof base.screensaverEnabled === "boolean" ? base.screensaverEnabled : true,
+    screensaverIdleMinutes:
+      typeof (base as Partial<GachaConfig>).screensaverIdleMinutes === "number" &&
+      (base as Partial<GachaConfig>).screensaverIdleMinutes! > 0
+        ? (base as Partial<GachaConfig>).screensaverIdleMinutes!
+        : 5,
     filmImageIds: (base.filmImageIds ?? []).filter(Boolean),
     screensaverImageIds: (screensaverImageIdsFallback ?? []).filter(Boolean),
     prizes: (base.prizes ?? []).map(normalizePrize),
@@ -100,6 +108,13 @@ export const useGachaStore = defineStore("gacha", {
     },
     setTimezone(timezone: Timezone) {
       this.config.timezone = timezone;
+    },
+    setScreensaverEnabled(value: boolean) {
+      this.config.screensaverEnabled = value;
+    },
+    setScreensaverIdleMinutes(minutes: number) {
+      const safe = Number.isFinite(minutes) && minutes > 0 ? minutes : 1;
+      this.config.screensaverIdleMinutes = safe;
     },
     toggleUseStockAsWeight(value: boolean) {
       this.config.useStockAsWeight = value;

@@ -5,9 +5,11 @@ import { gsap } from "gsap";
 import ContextMenu from "@imengyu/vue3-context-menu";
 import RouteTransition from "./components/RouteTransition.vue";
 import backgroundImage from "./assets/扭蛋机组装素材/背景.jpg";
+import { useGachaStore } from "./stores/gacha";
 
 const router = useRouter();
 const route = useRoute();
+const gachaStore = useGachaStore();
 
 const navItems = [
   { label: "扭蛋抽奖", path: "/" },
@@ -22,14 +24,21 @@ const isNotHomePage = computed(() => route.path !== "/" && route.path !== "/scre
 const headerRef = ref<HTMLElement | null>(null);
 let headerAnimation: gsap.core.Tween | null = null;
 
-// 屏保相关状态
-const SCREENSAVER_TIMEOUT = 5 * 60 * 1000; // 5分钟无操作后进入屏保
+// 屏保相关状态：从配置中读取是否启用及静置时间
 let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 const previousPath = ref<string>("/"); // 记录进入屏保前的路径
 
 const appBackgroundStyle = computed(() => ({
   backgroundImage: `url(${backgroundImage})`,
 }));
+
+const screensaverEnabled = computed(() => gachaStore.config.screensaverEnabled);
+const screensaverTimeoutMs = computed(() => {
+  if (!screensaverEnabled.value) return 0;
+  const minutes = gachaStore.config.screensaverIdleMinutes;
+  if (!Number.isFinite(minutes) || minutes <= 0) return 0;
+  return minutes * 60 * 1000;
+});
 
 const handleContextMenu = (event: MouseEvent) => {
   if (!event.ctrlKey) return;
@@ -112,6 +121,13 @@ const resetInactivityTimer = () => {
   // 清除之前的定时器
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+
+  const timeout = screensaverTimeoutMs.value;
+  // 未启用或配置为非正数时，不自动进入屏保
+  if (!timeout || timeout <= 0) {
+    return;
   }
 
   // 设置新的定时器
@@ -122,7 +138,7 @@ const resetInactivityTimer = () => {
     }
     // 切换到屏保页面
     router.push("/screensaver");
-  }, SCREENSAVER_TIMEOUT);
+  }, timeout);
 };
 
 // 用户活动事件处理：屏保页仅 ESC 退出，其它操作不退出

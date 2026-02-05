@@ -21,6 +21,10 @@ export interface GachaConfig {
   requireSocialAccount: boolean;
   useStockAsWeight: boolean;
   timezone: Timezone;
+  /** 是否开启自动屏保（无操作一段时间后自动进入屏保页面） */
+  screensaverEnabled: boolean;
+  /** 距离上一次用户操作多久（分钟）后进入屏保页面 */
+  screensaverIdleMinutes: number;
   /** 胶片/屏保展示用图片：存储图片库 id 列表（按顺序展示） */
   filmImageIds: string[];
   /** 屏保展示用图片：存储图片库 id 列表（按顺序展示） */

@@ -5,6 +5,7 @@ import { useGachaStore } from "../stores/gacha";
 import FilmImageManager from "../components/FilmStrip/FilmImageManager.vue";
 import PrizeConfigSection from "../components/Admin/PrizeConfigSection.vue";
 import LotteryConfigSection from "../components/Admin/LotteryConfigSection.vue";
+import ScreensaverConfigSection from "../components/Admin/ScreensaverConfigSection.vue";
 
 const store = useGachaStore();
 const config = computed(() => store.config);
@@ -13,6 +14,14 @@ const addPrize = () => store.addPrize();
 
 const updateRequireSocialAccount = (value: boolean) => store.toggleRequireSocialAccount(value);
 const updateUseStockAsWeight = (value: boolean) => store.toggleUseStockAsWeight(value);
+
+const updateScreensaverEnabled = (value: boolean) => {
+  store.setScreensaverEnabled(value);
+};
+
+const updateScreensaverIdleMinutes = (value: number) => {
+  store.setScreensaverIdleMinutes(value);
+};
 
 const removePrize = (index: number) => {
   if (config.value.prizes.length <= 1) {
@@ -39,18 +48,34 @@ watch(
 <template>
   <main class="page-container admin-page">
     <section class="admin-section" aria-label="抽奖规则配置" data-enter="up">
-      <LotteryConfigSection :require-social-account="config.requireSocialAccount"
+      <LotteryConfigSection
+        :require-social-account="config.requireSocialAccount"
         :use-stock-as-weight="config.useStockAsWeight"
-        @update:requireSocialAccount="updateRequireSocialAccount" @update:useStockAsWeight="updateUseStockAsWeight"
+        @update:requireSocialAccount="updateRequireSocialAccount"
+        @update:useStockAsWeight="updateUseStockAsWeight"
       />
     </section>
 
     <section class="admin-section" aria-label="奖品池配置" data-enter="up" data-enter-order="1">
-      <PrizeConfigSection :prizes="config.prizes" :use-stock-as-weight="config.useStockAsWeight" @add-prize="addPrize"
-        @remove-prize="removePrize" @update-prize="({ index, patch }) => store.updatePrize(index, patch)" />
+      <PrizeConfigSection
+        :prizes="config.prizes"
+        :use-stock-as-weight="config.useStockAsWeight"
+        @add-prize="addPrize"
+        @remove-prize="removePrize"
+        @update-prize="({ index, patch }) => store.updatePrize(index, patch)"
+      />
     </section>
 
-    <section class="admin-section" aria-label="胶片与展示素材管理" data-enter="up" data-enter-order="2">
+    <section class="admin-section" aria-label="屏保设置" data-enter="up" data-enter-order="2">
+      <ScreensaverConfigSection
+        :enabled="config.screensaverEnabled"
+        :idle-minutes="config.screensaverIdleMinutes"
+        @update:enabled="updateScreensaverEnabled"
+        @update:idleMinutes="updateScreensaverIdleMinutes"
+      />
+    </section>
+
+    <section class="admin-section" aria-label="胶片与展示素材管理" data-enter="up" data-enter-order="3">
       <FilmImageManager />
     </section>
   </main>
