@@ -37,8 +37,8 @@ import {
 } from "vue";
 import type { GachaRecord } from "../types/gacha";
 import { useGachaStore } from "../stores/gacha";
-import luckyIp1 from "../assets/扭蛋机组装素材/幸运ip-1.png";
-import luckyIp2 from "../assets/扭蛋机组装素材/幸运ip-2.png";
+import luckyIp1 from "../assets/gacha-machine-assets/lucky-ip-1.png";
+import luckyIp2 from "../assets/gacha-machine-assets/lucky-ip-2.png";
 
 const props = defineProps<{
   records: GachaRecord[];

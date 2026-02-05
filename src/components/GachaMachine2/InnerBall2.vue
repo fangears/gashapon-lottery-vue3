@@ -3,10 +3,10 @@ import { computed } from "vue";
 import gsap from "gsap";
 import type { Prize } from "../../types/gacha";
 // 导入扭蛋图片
-import gachaBall1 from "../../assets/扭蛋机组装素材/扭蛋素材/1.png";
-import gachaBall2 from "../../assets/扭蛋机组装素材/扭蛋素材/2.png";
-import gachaBall3 from "../../assets/扭蛋机组装素材/扭蛋素材/3.png";
-import gachaBall4 from "../../assets/扭蛋机组装素材/扭蛋素材/4.png";
+import gachaBall1 from "../../assets/gacha-machine-assets/gacha-assets/1.png";
+import gachaBall2 from "../../assets/gacha-machine-assets/gacha-assets/2.png";
+import gachaBall3 from "../../assets/gacha-machine-assets/gacha-assets/3.png";
+import gachaBall4 from "../../assets/gacha-machine-assets/gacha-assets/4.png";
 
 const props = defineProps<{
   status: "idle" | "shaking" | "dropping" | "revealing" | "open";

@@ -3,14 +3,14 @@ import { computed, ref, watch, onUnmounted } from "vue";
 import gsap from "gsap";
 import type { Prize } from "../../types/gacha";
 // 导入扭蛋分体素材
-import ball1Top from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋1/扭蛋-1.png";
-import ball1Bottom from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋1/扭蛋-2.png";
-import ball2Top from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋2/扭蛋-1.png";
-import ball2Bottom from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋2/扭蛋-2.png";
-import ball3Top from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋3/扭蛋-1.png";
-import ball3Bottom from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋3/扭蛋-2.png";
-import ball4Top from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋4/扭蛋-1.png";
-import ball4Bottom from "../../assets/扭蛋机组装素材/扭蛋分体素材/扭蛋4/扭蛋-2.png";
+import ball1Top from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha1/gacha-1.png";
+import ball1Bottom from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha1/gacha-2.png";
+import ball2Top from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha2/gacha-1.png";
+import ball2Bottom from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha2/gacha-2.png";
+import ball3Top from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha3/gacha-1.png";
+import ball3Bottom from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha3/gacha-2.png";
+import ball4Top from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha4/gacha-1.png";
+import ball4Bottom from "../../assets/gacha-machine-assets/gacha-separated-parts/gacha4/gacha-2.png";
 
 defineOptions({
   inheritAttrs: false

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { gsap } from "gsap";
 import ContextMenu from "@imengyu/vue3-context-menu";
 import RouteTransition from "./components/RouteTransition.vue";
-import backgroundImage from "./assets/扭蛋机组装素材/背景.jpg";
+import backgroundImage from "./assets/gacha-machine-assets/background.jpg";
 import { useGachaStore } from "./stores/gacha";
 
 const router = useRouter();

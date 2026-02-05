@@ -5,7 +5,7 @@ import { useGachaMachine } from "../composables/useGachaMachine";
 import { useGachaStore } from "../stores/gacha";
 import type { Prize } from "../types/gacha";
 import GachaMachine from "../components/GachaMachine/index.vue";
-import backgroundImage from "../assets/扭蛋机组装素材/背景.jpg";
+import backgroundImage from "../assets/gacha-machine-assets/background.jpg";
 
 type MachineStatus = "idle" | "shaking" | "dropping" | "revealing" | "open";
 

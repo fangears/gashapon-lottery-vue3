@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import gsap from "gsap";
 import { useGachaStore } from "../../stores/gacha";
 import { useImageLibraryStore } from "../../stores/imageLibrary";
-import filmFrameImage from "../../assets/扭蛋机组装素材/右边照片录播-优化.png";
+import filmFrameImage from "../../assets/gacha-machine-assets/right-film-frame-optimized.png";
 
 const store = useGachaStore();
 const imageStore = useImageLibraryStore();
