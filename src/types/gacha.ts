@@ -1,4 +1,4 @@
-export type Timezone = "Asia/Shanghai" | "America/Las_Vegas";
+export type Timezone = "Asia/Shanghai" | "America/Los_Angeles";
 
 export interface Prize {
   id: string;
@@ -43,5 +43,6 @@ export interface GachaRecord {
   prizeId: string;
   prizeName: string;
   email?: string;
+  /** 抽奖时间，UTC 时间戳（毫秒），存储与导出均使用此原数据 */
   drawnAt: number;
 }

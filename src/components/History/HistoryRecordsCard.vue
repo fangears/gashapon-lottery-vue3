@@ -10,8 +10,20 @@ const props = defineProps<{
   timezone: Timezone;
   timezones: TimezoneOption[];
   isDev: boolean;
-  formatTime: (timestamp: number) => string;
 }>();
+
+/** 按当前选中时区格式化 UTC 时间戳，仅用于表格显示，原数据（drawnAt）不变 */
+const formatTimeByTimezone = (timestamp: number) =>
+  new Intl.DateTimeFormat("zh-CN", {
+    timeZone: props.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(timestamp));
 
 const emit = defineEmits<{
   (e: "export-excel"): void;
@@ -48,10 +60,16 @@ const handleDeleteRecord = (row: GachaRecord) => {
       <div class="history-header">
         <h2>记录列表</h2>
         <div class="history-actions">
-          <el-select :model-value="props.timezone" placeholder="请选择时区" style="width: 240px"
-            @update:model-value="(v: Timezone) => emit('update:timezone', v)">
-            <el-option v-for="item in props.timezones" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
+          <el-button-group>
+            <el-button
+              v-for="item in props.timezones"
+              :key="item.value"
+              :type="props.timezone === item.value ? 'primary' : 'default'"
+              @click="emit('update:timezone', item.value)"
+            >
+              {{ item.label }}
+            </el-button>
+          </el-button-group>
           <el-button type="danger" @click="handleClearHistory">清空记录</el-button>
           <el-button type="primary" @click="emit('export-excel')">导出 Excel</el-button>
         </div>
@@ -62,7 +80,7 @@ const handleDeleteRecord = (row: GachaRecord) => {
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column label="抽奖时间" min-width="180">
           <template #default="{ row }">
-            {{ props.formatTime(row.drawnAt) }}
+            {{ formatTimeByTimezone(row.drawnAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">

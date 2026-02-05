@@ -84,10 +84,19 @@ const normalizeConfig = (config?: GachaConfig): GachaConfig => {
       ? (topImageKey as GachaMachineTopImageKey)
       : "gacha-top-half";
 
+  // 时区：America/Las_Vegas 非 IANA 有效，拉斯维加斯使用 America/Los_Angeles（太平洋时区）
+  const rawTz = base.timezone ?? "Asia/Shanghai";
+  const timezone: Timezone =
+    rawTz === "America/Las_Vegas"
+      ? "America/Los_Angeles"
+      : rawTz === "America/Los_Angeles" || rawTz === "Asia/Shanghai"
+        ? rawTz
+        : "Asia/Shanghai";
+
   return {
     requireSocialAccount: Boolean(base.requireSocialAccount),
     useStockAsWeight: Boolean(base.useStockAsWeight),
-    timezone: base.timezone ?? "Asia/Shanghai",
+    timezone,
     screensaverEnabled: typeof base.screensaverEnabled === "boolean" ? base.screensaverEnabled : true,
     screensaverIdleMinutes:
       typeof (base as Partial<GachaConfig>).screensaverIdleMinutes === "number" &&

@@ -186,9 +186,11 @@ watch(
 
 <template>
   <div class="route-transition-wrapper">
-    <transition :css="false" @before-enter="onBeforeEnter" @enter="onEnter" @leave="onLeave" mode="out-in">
-      <router-view :key="route.path" />
-    </transition>
+    <router-view v-slot="{ Component }">
+      <transition :css="false" @before-enter="onBeforeEnter" @enter="onEnter" @leave="onLeave" mode="out-in">
+        <component v-if="Component" :is="Component" :key="route.path" />
+      </transition>
+    </router-view>
   </div>
 </template>
 

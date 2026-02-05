@@ -12,31 +12,20 @@ const timezone = computed(() => store.config.timezone);
 
 const timezones: Array<{ label: string; value: Timezone }> = [
   { label: "中国（上海）", value: "Asia/Shanghai" },
-  { label: "美国（拉斯维加斯）", value: "America/Las_Vegas" },
+  { label: "美国（拉斯维加斯）", value: "America/Los_Angeles" },
 ];
-
-const formatTime = (timestamp: number) =>
-  new Intl.DateTimeFormat("zh-CN", {
-    timeZone: timezone.value,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(new Date(timestamp));
 
 const exportExcel = () => {
   if (history.value.length === 0) {
     ElMessage.warning("暂无记录可导出。");
     return;
   }
+  // 导出原数据：时间使用 UTC ISO 字符串，不随显示时区变化
   const rows = history.value.map((record) => ({
     社媒账号: record.socialAccount ?? "",
     奖品名称: record.prizeName,
     邮箱: record.email ?? "",
-    抽奖时间: formatTime(record.drawnAt),
+    抽奖时间: new Date(record.drawnAt).toISOString(),
   }));
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
@@ -98,7 +87,7 @@ const isDev = import.meta.env.DEV;
 <template>
   <main class="page-container" data-enter="up">
     <HistoryRecordsCard :records="history" :timezone="timezone" :timezones="timezones" :is-dev="isDev"
-      :format-time="formatTime" @update:timezone="(v) => store.setTimezone(v)" @export-excel="exportExcel"
+      @update:timezone="(v) => store.setTimezone(v)" @export-excel="exportExcel"
       @clear-history="clearHistory" @edit-record="openEdit" @delete-record="deleteRecord" />
     <el-dialog v-model="editDialogVisible" title="编辑记录" width="420px" destroy-on-close>
       <el-form :model="editForm" label-width="80px">
