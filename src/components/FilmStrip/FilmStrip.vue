@@ -42,8 +42,9 @@ function updateViewportHeight() {
   viewportHeight.value = viewportRef.value?.clientHeight ?? 0;
 }
 
-async function waitForAllImagesLoaded(container: HTMLElement) {
-  const imgs = Array.from(container.querySelectorAll("img"));
+// 不再等待全部图片加载，避免首屏长时间卡住
+function waitForFirstScreenImages(container: HTMLElement, maxWait = 6): Promise<void> {
+  const imgs = Array.from(container.querySelectorAll("img")).slice(0, maxWait);
   const pending = imgs
     .filter((img) => !img.complete)
     .map(
@@ -54,7 +55,11 @@ async function waitForAllImagesLoaded(container: HTMLElement) {
           img.addEventListener("error", done, { once: true });
         }),
     );
-  if (pending.length) await Promise.all(pending);
+  if (pending.length === 0) return Promise.resolve();
+  return Promise.race([
+    Promise.all(pending).then(() => undefined),
+    new Promise<void>((r) => setTimeout(r, 1500)),
+  ]);
 }
 
 function killTween() {
@@ -106,8 +111,8 @@ function startGsapLoop() {
 async function refresh() {
   updateViewportHeight();
   await nextTick();
-  if (viewportRef.value) await waitForAllImagesLoaded(viewportRef.value);
   startGsapLoop();
+  if (viewportRef.value) waitForFirstScreenImages(viewportRef.value).catch(() => {});
 }
 
 function onResize() {
@@ -118,7 +123,7 @@ function onResize() {
 }
 
 onMounted(() => {
-  startAnimations();
+  requestAnimationFrame(() => startAnimations());
 });
 
 watch(
@@ -138,8 +143,14 @@ onUnmounted(() => {
   <div class="film-strip">
     <div v-if="filmSlides.length > 0" ref="viewportRef" class="film-viewport">
       <div ref="trackRef" class="film-track" :style="{ backgroundImage: `url(${filmFrameImage})` }">
-        <div v-for="(src, idx) in filmSlides" :key="`${idx}-${src.slice(0, 24)}`" class="film-slide">
-          <img class="film-image" :src="src" alt="film" />
+        <div v-for="(src, idx) in filmSlides" :key="`film-${idx}`" class="film-slide">
+          <img
+            class="film-image"
+            :src="src"
+            alt="film"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
       </div>
     </div>

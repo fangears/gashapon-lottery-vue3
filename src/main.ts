@@ -47,11 +47,10 @@ async function bootstrap() {
     if (filmIds.length) gachaStore.setFilmImageIds(filmIds);
   }
 
-  // 若屏保未配置：优先用“screensaver”标签，否则沿用胶片选择（保持旧版体验）
+  // 若屏保未配置：仅用“screensaver”标签的图片作为默认，不与胶片关联
   if (!gachaStore.config.screensaverImageIds?.length) {
     const screensaverIds = imageStore.items.filter((x) => x.tags?.includes("screensaver")).map((x) => x.id);
     if (screensaverIds.length) gachaStore.setScreensaverImageIds(screensaverIds);
-    else if (gachaStore.config.filmImageIds?.length) gachaStore.setScreensaverImageIds(gachaStore.config.filmImageIds);
   }
 
   app.mount("#app");

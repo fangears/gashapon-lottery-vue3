@@ -72,10 +72,11 @@ const normalizePrize = (prize: Prize): Prize => ({
 
 const normalizeConfig = (config?: GachaConfig): GachaConfig => {
   const base = config ?? createDefaultConfig();
-  // 兼容迁移：
-  // - 旧版只有 filmImageIds（胶片/屏保共用）
-  // - 新版拆分 screensaverImageIds；若缺失则默认沿用 filmImageIds
-  const screensaverImageIdsFallback = (base as Partial<GachaConfig>).screensaverImageIds ?? base.filmImageIds ?? [];
+  // 兼容迁移：旧版配置无 screensaverImageIds 键时才用 filmImageIds，否则两者独立
+  const hasScreensaverKey = (base as Partial<GachaConfig>).screensaverImageIds !== undefined;
+  const screensaverImageIdsFallback = hasScreensaverKey
+    ? (base.screensaverImageIds ?? [])
+    : (base.filmImageIds ?? []);
   const topImageKey = (base as Partial<GachaConfig>).gachaMachineTopImage;
   const validTopImageKeys: GachaMachineTopImageKey[] = ["gacha-machine-top-2", "gacha-top-half"];
   const gachaMachineTopImage =
