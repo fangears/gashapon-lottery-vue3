@@ -112,7 +112,7 @@ async function refresh() {
   updateViewportHeight();
   await nextTick();
   startGsapLoop();
-  if (viewportRef.value) waitForFirstScreenImages(viewportRef.value).catch(() => {});
+  if (viewportRef.value) waitForFirstScreenImages(viewportRef.value).catch(() => { });
 }
 
 function onResize() {
@@ -144,13 +144,7 @@ onUnmounted(() => {
     <div v-if="filmSlides.length > 0" ref="viewportRef" class="film-viewport">
       <div ref="trackRef" class="film-track" :style="{ backgroundImage: `url(${filmFrameImage})` }">
         <div v-for="(src, idx) in filmSlides" :key="`film-${idx}`" class="film-slide">
-          <img
-            class="film-image"
-            :src="src"
-            alt="film"
-            loading="lazy"
-            decoding="async"
-          />
+          <img class="film-image" :src="src" alt="film" loading="lazy" decoding="async" />
         </div>
       </div>
     </div>
