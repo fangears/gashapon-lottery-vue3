@@ -85,12 +85,13 @@ const normalizeConfig = (config?: GachaConfig): GachaConfig => {
       : "gacha-top-half";
 
   // 时区：America/Las_Vegas 非 IANA 有效，拉斯维加斯使用 America/Los_Angeles（太平洋时区）
-  const rawTz = base.timezone ?? "Asia/Shanghai";
+  // 兼容旧配置可能存过的字符串，故按 string 比较后再赋为合法 Timezone
+  const rawTz = (base.timezone ?? "Asia/Shanghai") as string;
   const timezone: Timezone =
     rawTz === "America/Las_Vegas"
       ? "America/Los_Angeles"
       : rawTz === "America/Los_Angeles" || rawTz === "Asia/Shanghai"
-        ? rawTz
+        ? (rawTz as Timezone)
         : "Asia/Shanghai";
 
   return {
