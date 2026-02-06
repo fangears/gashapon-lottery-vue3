@@ -6,8 +6,10 @@ import ContextMenu from "@imengyu/vue3-context-menu";
 import RouteTransition from "./components/RouteTransition.vue";
 import backgroundImage from "./assets/gacha-machine-assets/background.jpg";
 import { useGachaStore } from "./stores/gacha";
+import { useFullscreen } from "./composables/useFullscreen";
 
 const router = useRouter();
+const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 const route = useRoute();
 const gachaStore = useGachaStore();
 
@@ -202,8 +204,31 @@ onUnmounted(() => {
           :class="{ active: activePath === item.path }" @click="router.push(item.path)">
           {{ item.label }}
         </button>
+        <button type="button" class="nav-button fullscreen-btn" :title="isFullscreen ? '退出全屏' : '全屏'"
+          @click="toggleFullscreen">
+          <span class="fullscreen-icon" aria-hidden="true">
+            <template v-if="isFullscreen">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+            </template>
+            <template v-else>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            </template>
+          </span>
+        </button>
       </nav>
     </header>
+    <!-- 首页/屏保时显示的浮动全屏按钮 -->
+    <button v-if="!isNotHomePage" type="button" class="fullscreen-fab" :title="isFullscreen ? '退出全屏' : '全屏'"
+      @click="toggleFullscreen">
+      <span class="fullscreen-icon" aria-hidden="true">
+        <template v-if="isFullscreen">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+        </template>
+        <template v-else>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        </template>
+      </span>
+    </button>
     <RouteTransition />
   </div>
 </template>
@@ -269,5 +294,55 @@ onUnmounted(() => {
   border-color: var(--color-primary);
   background: #ffffff;
   box-shadow: var(--shadow-sm);
+}
+
+.fullscreen-btn {
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.1;
+  transition: opacity 0.2s ease;
+}
+
+.fullscreen-btn:hover {
+  opacity: 1;
+}
+
+.fullscreen-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 首页/屏保时的浮动全屏按钮 */
+.fullscreen-fab {
+  position: fixed;
+  bottom: var(--space-xl);
+  right: var(--space-xl);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  opacity: 0.1;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.fullscreen-fab:hover {
+  opacity: 1;
+  background: #ffffff;
+  transform: scale(1.05);
+}
+
+.fullscreen-fab:active {
+  transform: scale(0.98);
 }
 </style>
